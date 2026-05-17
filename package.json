@@ -1,6 +1,28 @@
 {
   "name": "codra-monorepo",
+  "description": "Codra by Talocode. Local-first AI coding agent for serious engineering.",
   "private": true,
+  "keywords": [
+    "ai",
+    "ai-agent",
+    "coding-agent",
+    "local-first",
+    "developer-tools",
+    "tauri",
+    "rust",
+    "typescript",
+    "react",
+    "talocode"
+  ],
+  "author": "Talocode",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talocode/codra"
+  },
+  "bugs": {
+    "url": "https://github.com/talocode/codra/issues"
+  },
   "engines": {
     "node": ">=20",
     "pnpm": ">=9"
