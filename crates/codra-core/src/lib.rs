@@ -8,8 +8,8 @@ pub mod provider;
 pub mod provider_config;
 pub mod repair;
 pub mod services;
-pub mod verifier;
 pub mod task_store;
+pub mod verifier;
 
 pub struct ExecutionContext {
     pub task_id: String,
@@ -24,5 +24,11 @@ impl ExecutionContext {
         }
     }
 }
-pub mod workspace_scanner;
+pub mod command_runner;
 pub mod command_safety;
+pub mod file_changes;
+pub mod task_lifecycle;
+pub mod task_planner;
+pub mod task_verifier;
+pub mod workspace_scanner;
+pub mod task_executor;
