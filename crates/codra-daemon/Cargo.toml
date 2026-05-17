@@ -1,0 +1,26 @@
+[package]
+name = "codra-daemon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7", features = ["ws"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { version = "1.7", features = ["v4"] }
+chrono = { workspace = true }
+tower-http = { version = "0.5", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.5", features = ["derive"] }
+codra-core = { path = "../codra-core" }
+codra-protocol = { path = "../codra-protocol" }
+anyhow = { workspace = true }
+async-stream = "0.3"
+futures = "0.3"
+dirs = "5"
+
+[dev-dependencies]
+tempfile = "3"
+reqwest = { workspace = true }
