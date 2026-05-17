@@ -936,3 +936,150 @@ pub struct CodraShellData {
     pub safety_mode: SafetyMode,
     pub runtime_mode: RuntimeMode,
 }
+
+// =============================================
+// Codra Agent Task Loop Domain Models (v0.2.0)
+// =============================================
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum TaskStatus {
+    Draft,
+    Planning,
+    AwaitingApproval,
+    Approved,
+    Executing,
+    Verifying,
+    RepairPlanning,
+    AwaitingRepairApproval,
+    Repairing,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Task {
+    pub id: String,
+    pub title: String,
+    pub user_prompt: String,
+    pub workspace_path: String,
+    pub status: TaskStatus,
+    pub created_at: String,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
+    pub plan: Option<TaskPlan>,
+    pub repair_plan: Option<TaskPlan>,
+    pub changed_files: Vec<FileChange>,
+    pub commands_run: Vec<CommandRun>,
+    pub verification_result: Option<VerificationResult>,
+    pub final_report: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskPlan {
+    pub summary: String,
+    pub steps: Vec<TaskStep>,
+    pub files_to_read: Vec<String>,
+    pub files_to_modify: Vec<String>,
+    pub commands_to_run: Vec<String>,
+    pub risk_level: String,
+    pub requires_approval: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskStep {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FileChange {
+    pub path: String,
+    pub change_type: String,
+    pub approved: bool,
+    pub applied: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandRun {
+    pub command: String,
+    pub cwd: String,
+    pub status: String,
+    pub exit_code: Option<i32>,
+    pub stdout_preview: Option<String>,
+    pub stderr_preview: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VerificationResult {
+    pub success: bool,
+    pub summary: String,
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskEvent {
+    pub id: String,
+    pub task_id: String,
+    pub timestamp: String,
+    pub event_type: String,
+    pub message: String,
+}
+
+
+// =============================================
+// Workspace Context Scanner Models (v0.2.0)
+// =============================================
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum FileNodeKind {
+    File,
+    Directory,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceFileNode {
+    pub path: String,
+    pub kind: FileNodeKind,
+    pub size: Option<u64>,
+    pub children: Option<Vec<WorkspaceFileNode>>,
+    pub language: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DetectedCommand {
+    pub command: String,
+    pub reason: String,
+    pub risk_level: String,
+    pub allowed: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceContext {
+    pub workspace_path: String,
+    pub is_git_repo: bool,
+    pub git_branch: Option<String>,
+    pub git_status_summary: Option<String>,
+    pub detected_stack: Vec<String>,
+    pub detected_package_managers: Vec<String>,
+    pub detected_config_files: Vec<String>,
+    pub suggested_commands: Vec<DetectedCommand>,
+    pub file_tree: Vec<WorkspaceFileNode>,
+    pub ignored_dirs: Vec<String>,
+    pub scanned_at: String,
+}

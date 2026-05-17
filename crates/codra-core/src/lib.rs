@@ -9,6 +9,7 @@ pub mod provider_config;
 pub mod repair;
 pub mod services;
 pub mod verifier;
+pub mod task_store;
 
 pub struct ExecutionContext {
     pub task_id: String,
@@ -23,3 +24,5 @@ impl ExecutionContext {
         }
     }
 }
+pub mod workspace_scanner;
+pub mod command_safety;
