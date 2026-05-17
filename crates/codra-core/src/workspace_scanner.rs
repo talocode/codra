@@ -7,8 +7,18 @@ const MAX_FILE_SIZE_FOR_TREE: u64 = 2 * 1024 * 1024; // 2MB
 const MAX_FILE_SIZE_FOR_CONTENT: u64 = 256 * 1024; // 256KB
 
 const IGNORED_DIRS: &[&str] = &[
-    "node_modules", "target", "dist", "build", ".git", ".next",
-    "coverage", "vendor", ".turbo", ".cache", "out", ".codra",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".git",
+    ".next",
+    "coverage",
+    "vendor",
+    ".turbo",
+    ".cache",
+    "out",
+    ".codra",
 ];
 
 pub struct WorkspaceScanner;
@@ -41,7 +51,8 @@ impl WorkspaceScanner {
         let detected_config_files = Self::detect_config_files(&canonical_root);
         let detected_package_managers = Self::detect_package_managers(&detected_config_files);
         let detected_stack = Self::detect_stack(&detected_config_files, &detected_package_managers);
-        let suggested_commands = Self::suggest_commands(&detected_config_files, &detected_package_managers);
+        let suggested_commands =
+            Self::suggest_commands(&detected_config_files, &detected_package_managers);
 
         let file_tree = Self::build_file_tree(&canonical_root, 0, 3)?;
 
@@ -62,10 +73,22 @@ impl WorkspaceScanner {
 
     fn detect_config_files(root: &Path) -> Vec<String> {
         let candidates = [
-            "package.json", "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lockb",
-            "Cargo.toml", "pyproject.toml", "requirements.txt", "go.mod", "deno.json",
-            "tsconfig.json", "vite.config.ts", "vite.config.js",
-            "next.config.ts", "next.config.js", "tauri.conf.json",
+            "package.json",
+            "pnpm-lock.yaml",
+            "package-lock.json",
+            "yarn.lock",
+            "bun.lockb",
+            "Cargo.toml",
+            "pyproject.toml",
+            "requirements.txt",
+            "go.mod",
+            "deno.json",
+            "tsconfig.json",
+            "vite.config.ts",
+            "vite.config.js",
+            "next.config.ts",
+            "next.config.js",
+            "tauri.conf.json",
         ];
 
         candidates
@@ -77,24 +100,47 @@ impl WorkspaceScanner {
 
     fn detect_package_managers(configs: &[String]) -> Vec<String> {
         let mut pm = vec![];
-        if configs.iter().any(|c| c.contains("pnpm")) { pm.push("pnpm".to_string()); }
-        if configs.iter().any(|c| c.contains("package-lock")) { pm.push("npm".to_string()); }
-        if configs.iter().any(|c| c.contains("yarn")) { pm.push("yarn".to_string()); }
-        if configs.contains(&"bun.lockb".to_string()) { pm.push("bun".to_string()); }
+        if configs.iter().any(|c| c.contains("pnpm")) {
+            pm.push("pnpm".to_string());
+        }
+        if configs.iter().any(|c| c.contains("package-lock")) {
+            pm.push("npm".to_string());
+        }
+        if configs.iter().any(|c| c.contains("yarn")) {
+            pm.push("yarn".to_string());
+        }
+        if configs.contains(&"bun.lockb".to_string()) {
+            pm.push("bun".to_string());
+        }
         pm
     }
 
     fn detect_stack(configs: &[String], pm: &[String]) -> Vec<String> {
         let mut stack = vec![];
-        if pm.iter().any(|p| p == "pnpm" || p == "npm" || p == "yarn") { stack.push("Node".to_string()); }
-        if configs.contains(&"Cargo.toml".to_string()) { stack.push("Rust".to_string()); }
-        if configs.iter().any(|c| c.contains("tauri")) { stack.push("Tauri".to_string()); }
-        if configs.contains(&"pyproject.toml".to_string()) || configs.contains(&"requirements.txt".to_string()) {
+        if pm.iter().any(|p| p == "pnpm" || p == "npm" || p == "yarn") {
+            stack.push("Node".to_string());
+        }
+        if configs.contains(&"Cargo.toml".to_string()) {
+            stack.push("Rust".to_string());
+        }
+        if configs.iter().any(|c| c.contains("tauri")) {
+            stack.push("Tauri".to_string());
+        }
+        if configs.contains(&"pyproject.toml".to_string())
+            || configs.contains(&"requirements.txt".to_string())
+        {
             stack.push("Python".to_string());
         }
-        if configs.contains(&"go.mod".to_string()) { stack.push("Go".to_string()); }
-        if configs.contains(&"deno.json".to_string()) { stack.push("Deno".to_string()); }
-        if configs.iter().any(|c| c.contains("vite") || c.contains("next")) {
+        if configs.contains(&"go.mod".to_string()) {
+            stack.push("Go".to_string());
+        }
+        if configs.contains(&"deno.json".to_string()) {
+            stack.push("Deno".to_string());
+        }
+        if configs
+            .iter()
+            .any(|c| c.contains("vite") || c.contains("next"))
+        {
             stack.push("TypeScript".to_string());
             stack.push("React".to_string());
         }
@@ -148,7 +194,11 @@ impl WorkspaceScanner {
         cmds
     }
 
-    fn build_file_tree(root: &Path, depth: usize, max_depth: usize) -> Result<Vec<WorkspaceFileNode>, String> {
+    fn build_file_tree(
+        root: &Path,
+        depth: usize,
+        max_depth: usize,
+    ) -> Result<Vec<WorkspaceFileNode>, String> {
         if depth > max_depth {
             return Ok(vec![]);
         }
@@ -157,7 +207,11 @@ impl WorkspaceScanner {
         if let Ok(entries) = fs::read_dir(root) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
 
                 if IGNORED_DIRS.contains(&name.as_str()) {
                     continue;
@@ -171,7 +225,11 @@ impl WorkspaceScanner {
                 if metadata.is_dir() {
                     let children = Self::build_file_tree(&path, depth + 1, max_depth).ok();
                     nodes.push(WorkspaceFileNode {
-                        path: path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string(),
+                        path: path
+                            .strip_prefix(root)
+                            .unwrap_or(&path)
+                            .to_string_lossy()
+                            .to_string(),
                         kind: FileNodeKind::Directory,
                         size: None,
                         children,
@@ -184,7 +242,11 @@ impl WorkspaceScanner {
                     }
                     let language = Self::guess_language(&name);
                     nodes.push(WorkspaceFileNode {
-                        path: path.strip_prefix(root).unwrap_or(&path).to_string_lossy().to_string(),
+                        path: path
+                            .strip_prefix(root)
+                            .unwrap_or(&path)
+                            .to_string_lossy()
+                            .to_string(),
                         kind: FileNodeKind::File,
                         size: Some(size),
                         children: None,
@@ -197,12 +259,19 @@ impl WorkspaceScanner {
     }
 
     fn guess_language(filename: &str) -> Option<String> {
-        if filename.ends_with(".rs") { Some("rust".to_string()) }
-        else if filename.ends_with(".ts") || filename.ends_with(".tsx") { Some("typescript".to_string()) }
-        else if filename.ends_with(".js") || filename.ends_with(".jsx") { Some("javascript".to_string()) }
-        else if filename.ends_with(".py") { Some("python".to_string()) }
-        else if filename == "Cargo.toml" { Some("toml".to_string()) }
-        else { None }
+        if filename.ends_with(".rs") {
+            Some("rust".to_string())
+        } else if filename.ends_with(".ts") || filename.ends_with(".tsx") {
+            Some("typescript".to_string())
+        } else if filename.ends_with(".js") || filename.ends_with(".jsx") {
+            Some("javascript".to_string())
+        } else if filename.ends_with(".py") {
+            Some("python".to_string())
+        } else if filename == "Cargo.toml" {
+            Some("toml".to_string())
+        } else {
+            None
+        }
     }
 
     fn detect_git_branch(root: &Path) -> Option<String> {

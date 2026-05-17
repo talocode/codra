@@ -1037,7 +1037,6 @@ pub struct TaskEvent {
     pub message: String,
 }
 
-
 // =============================================
 // Workspace Context Scanner Models (v0.2.0)
 // =============================================

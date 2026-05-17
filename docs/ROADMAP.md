@@ -13,7 +13,10 @@ Codra is being developed as the local coding agent inside the Talocode ecosystem
 
 ## Phase 2: Agent Loop
 
-- [ ] Planner (architectural planning)
+- [x] Task domain models + persistence
+- [x] Workspace Context Scanner
+- [x] Command safety allowlist
+- [ ] Planner integration (in progress)
 - [ ] Executor (precise file and command execution)
 - [ ] Verifier (test and build verification)
 - [ ] Repair loop (automatic failure recovery)

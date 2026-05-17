@@ -4,6 +4,7 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+#[derive(Clone)]
 pub struct TaskStore {
     tasks_dir: PathBuf,
     events_dir: PathBuf,

@@ -7,14 +7,28 @@ pub struct CommandSafetyResult {
     pub risk_level: String,
 }
 
-pub fn is_command_allowed(command: &str, _context: Option<&WorkspaceContext>) -> CommandSafetyResult {
+pub fn is_command_allowed(
+    command: &str,
+    _context: Option<&WorkspaceContext>,
+) -> CommandSafetyResult {
     let cmd_lower = command.to_lowercase();
 
     let dangerous_patterns = [
-        "rm -rf", "sudo ", "su ", "| bash", "| sh",
-        "chmod -R 777", "chown -R", "git reset --hard",
-        "git clean -fd", "git push --force", "npm publish",
-        "pnpm publish", "cargo publish", "ssh ", "scp ",
+        "rm -rf",
+        "sudo ",
+        "su ",
+        "| bash",
+        "| sh",
+        "chmod -R 777",
+        "chown -R",
+        "git reset --hard",
+        "git clean -fd",
+        "git push --force",
+        "npm publish",
+        "pnpm publish",
+        "cargo publish",
+        "ssh ",
+        "scp ",
     ];
 
     for pattern in dangerous_patterns {
@@ -28,8 +42,14 @@ pub fn is_command_allowed(command: &str, _context: Option<&WorkspaceContext>) ->
     }
 
     let safe_commands = [
-        "cargo check", "cargo test", "pnpm build", "pnpm test",
-        "pnpm lint", "npm run build", "npm test", "npm run lint",
+        "cargo check",
+        "cargo test",
+        "pnpm build",
+        "pnpm test",
+        "pnpm lint",
+        "npm run build",
+        "npm test",
+        "npm run lint",
         "go test ./...",
     ];
 
