@@ -2,60 +2,136 @@
   <img src="assets/logo.png" width="180" alt="Codra Logo">
 </p>
 
-<h1 align="center">Codra</h1>
+<h1 align="center">Codra by Talocode</h1>
 
 <p align="center">
-  <strong>The Local-First AI Coding Agent for Serious Engineering.</strong>
+  <strong>Local-first AI coding agent for serious engineering.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Production--Ready-green?style=for-the-badge" alt="Status">
-  <img src="https://img.shields.io/badge/Architecture-Tauri--Rust--React-blue?style=for-the-badge" alt="Architecture">
-  <img src="https://img.shields.io/badge/Runtime-Secure--Sandboxed-orange?style=for-the-badge" alt="Runtime">
+  <strong>Codra is the local agent. Talocode is the control plane.</strong>
 </p>
 
 ---
 
-**Codra** is a native, local-first AI software engineering agent designed to live where your code lives. Unlike cloud-based agents, Codra operates with direct access to your local file system, tools, and browser, maintaining a high-fidelity feedback loop without the latency or privacy concerns of remote proxies.
+**Codra** is a local-first AI coding agent built for real software work. It combines repo-aware orchestration, planning, execution, verification, repair loops, browser-aware workflows, and a native desktop experience to help builders ship software faster without losing control of their codebase.
 
-## 🚀 Core Pillars
+Codra is part of the Talocode ecosystem, a local-first platform for coding agents, browser agents, and developer automation.
 
-- **Privately Native**: Codra runs as a local Tauri desktop application. Your code never leaves your machine unless explicitly sent to your configured AI provider.
-- **Unified Intelligence Loop**: Integrates a multi-stage orchestration system:
-  - **Planner**: Strategizes multi-file changes and architectural shifts.
-  - **Executor**: Applies surgical patches with high precision.
-  - **Verifier**: Runs real tests and build commands to ensure integrity.
-  - **Repair Loop**: Automatically detects and fixes its own failures.
-- **Real Browser Runtime**: Features a CDP-backed browser subsystem for interacting with web apps, capturing screenshots, and verifying deployments in real-time.
-- **Persistent Context**: Automatically saves and restores workspace, planning, and execution states. Recover from a restart exactly where you left off.
+## Overview
 
-## ✨ Features
+Codra gives developers a powerful, supervised AI agent that lives on their machine. It understands your repository, proposes architectural plans, applies precise changes, verifies results, and can interact with local browsers — all while keeping you in full control.
 
-- 🏗️ **Repo-Aware**: Contextual understanding of large monorepos.
-- 🌐 **Browser Control**: Full autonomous web interaction for end-to-end testing.
-- 🛠️ **Deployment Ready**: Analyzes your stack and prepares deployment chains.
-- 📊 **Activity Timeline**: Unified system observability into a single, color-coded stream.
-- 🔌 **Model Agnostic**: Seamlessly switch between Ollama, OpenAI, and other providers.
+## Why Codra Exists
 
-## 🏁 Getting Started
+Most AI coding tools today are either cloud-dependent, opaque, or lack proper supervision mechanisms. Codra was built to solve this by being:
 
-1. **Launch Codra**: Open the desktop application.
-2. **Connect Workspace**: Point Codra to any local repository path.
-3. **Configure Provider**: Set up Ollama (local) or your preferred API provider.
-4. **Build**: Simply describe your intent and let Codra handle the orchestration.
+- Truly local-first
+- Transparent and auditable
+- Designed for serious, production-grade engineering work
+- Part of a larger ecosystem (Talocode) that will eventually offer remote and team capabilities
 
-## 🏗️ Architecture
+## Core Capabilities
 
-Codra is built on a high-performance stack for low-latency engineering:
-- **Core**: Rust (using `codra-core`) for heavy-duty system interaction.
-- **Frontend**: React + Tailwind for a premium, responsive UI.
-- **Bridge**: Tauri for secure, typed IPC between the UI and local system.
-- **Protocol**: Shared schemas between Rust and TypeScript for 100% type safety.
+- **Local-first coding agent** — Runs entirely on your machine with direct filesystem and terminal access.
+- **Repo-aware context** — Maintains deep understanding of your project structure, Git history, and metadata.
+- **Planner → Executor → Verifier → Repair loop** — Structured multi-step agent workflow with human approval checkpoints.
+- **Native desktop experience** — Built with Tauri, Rust, React, and TypeScript for performance and security.
+- **Browser-aware workflows** — Can control a local browser instance for preview verification and UI inspection (in progress).
+- **Persistent project state** — Remembers workspace context across sessions.
+- **Human-in-the-loop control** — Every significant action requires explicit approval.
+- **Future Talocode integration** — Will support remote monitoring and control through the Talocode control plane.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a deep dive.
+## How Codra Fits into Talocode
+
+**Codra is the local agent.**  
+**Talocode is the control plane.**
+
+Codra handles all local execution, file operations, browser interaction, and agent reasoning. Talocode will provide the remote control layer, mobile access, team workspaces, audit logs, and orchestration across multiple Codra instances.
+
+## Architecture
+
+Codra follows a clean layered architecture:
+
+- **Desktop Shell** — Tauri 2 native application (Rust + webview)
+- **Core Runtime** — `codra-core` crate handling agent orchestration, planning, and execution state
+- **Tooling Layer** — `codra-tools` for filesystem, Git, terminal, and search operations
+- **Browser Runtime** — `codra-browser` using Chrome DevTools Protocol for local web interaction
+- **UI Layer** — React + Vite + Tailwind frontend for visualization and approvals
+- **Protocol Layer** — Shared TypeScript/Rust types via `codra-protocol`
+- **Persistence** — Local SQLite via `codra-memory`
+
+All heavy operations (file changes, terminal commands, browser control) happen in Rust. The React UI only visualizes state and requests approvals.
+
+See `docs/ARCHITECTURE.md` for deeper details.
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. Run the development build: `pnpm dev`
+4. Connect a local workspace and configure your preferred model provider
+
+## Development Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development (Vite + Tauri)
+pnpm dev
+
+# Build the application
+pnpm build
+
+# Run Rust checks
+cargo check
+cargo test
+```
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the full phased roadmap.
+
+High-level milestones:
+
+- [ ] Local workspace connection and project indexing
+- [ ] Planner, executor, verifier, and repair loop
+- [ ] Browser runtime and deployment verification
+- [ ] Mobile remote control through Talocode
+- [ ] Team/workspace sync through Talocode
+
+## Security and Local-First Principles
+
+Codra is built around strong local-first principles:
+
+- Your code stays on your machine by default.
+- Agent actions are visible and require approval for destructive operations.
+- Secrets and credentials are never exposed in prompts or logs.
+- Remote Talocode features are opt-in.
+- All browser sessions and file operations run locally.
+
+## Current Status
+
+Codra is under active development. The core Tauri shell, agent orchestration framework, and basic tooling layer are in place. Many advanced agent capabilities are still being built.
+
+## Contributing
+
+We welcome contributions that align with Codra’s focus on local-first, secure, and supervised AI engineering workflows.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
+
+## License
+
+This project is licensed under the terms specified in the LICENSE file.
+
+## Contact
+
+Built by Talocode.  
+Contact: talocodehq@gmail.com
 
 ---
 
 <p align="center">
-  Built with obsession for the local-first engineering future.
+  <em>Codra by Talocode — Local agent. Serious engineering.</em>
 </p>
