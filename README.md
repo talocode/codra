@@ -135,3 +135,14 @@ Contact: talocodehq@gmail.com
 <p align="center">
   <em>Codra by Talocode — Local agent. Serious engineering.</em>
 </p>
+
+
+## Codra Local Daemon
+
+Run the local API server:
+
+```bash
+cargo run -p codra-daemon -- --host 127.0.0.1 --port 4387
+```
+
+See [docs/CODRA_DAEMON.md](docs/CODRA_DAEMON.md) for API routes, SSE events, and security model.

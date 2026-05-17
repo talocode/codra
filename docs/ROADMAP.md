@@ -52,3 +52,9 @@ Codra is being developed as the local coding agent inside the Talocode ecosystem
 **Current Focus**: Completing Phase 1 and beginning Phase 2 agent capabilities.
 
 See [docs/ARCHITECTURE.md](ARCHITECTURE.md) for technical details on how these phases will be implemented.
+
+## v0.3 - Codra Local Daemon Foundation
+- New `codra-daemon` crate with HTTP + SSE API
+- Full task lifecycle exposed over localhost
+- Local-only security model with optional token auth
+- Foundation for Talocode mobile control plane
