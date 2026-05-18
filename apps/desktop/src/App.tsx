@@ -1,289 +1,422 @@
-import { useEffect, useState } from 'react';
-import {
-  createTask,
-  listTasks,
-  getTaskEvents,
-  scanWorkspace,
-} from './lib/codraTaskApi';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, FolderOpen, Play } from 'lucide-react';
+import { createTask, getTaskEvents, listTasks, scanWorkspace } from './lib/codraTaskApi';
 import type { Task, TaskEvent, WorkspaceContext } from './lib/codraTaskApi';
 import { ThreadSidebar } from './components/ThreadSidebar';
 import { TaskThreadView } from './components/TaskThreadView';
 import { ModelPicker } from './components/ModelPicker';
-import type { ModelConfig } from './lib/modelConfig';
-import { loadModelConfig, getModelLabel } from './lib/modelConfig';
-import { FolderOpen, Settings, Play } from 'lucide-react';
+import { getModelLabel, loadModelConfig, type ModelConfig } from './lib/modelConfig';
 import { selectWorkspaceFolder } from './lib/workspacePicker';
 import { isTauriRuntime } from './lib/tauriRuntime';
 
+const LAST_WORKSPACE_KEY = 'codra_last_workspace';
+
+function sortTasks(tasks: Task[]) {
+  return [...tasks].sort((a, b) => {
+    const aTime = new Date(a.updated_at).getTime();
+    const bTime = new Date(b.updated_at).getTime();
+    return bTime - aTime;
+  });
+}
+
+function upsertTask(tasks: Task[], next: Task) {
+  return sortTasks([next, ...tasks.filter((task) => task.id !== next.id)]);
+}
+
+function basename(path: string) {
+  const normalized = path.replace(/[\\/]+$/, '');
+  if (!normalized) return '';
+  const parts = normalized.split(/[\\/]/).filter(Boolean);
+  return parts.at(-1) || normalized;
+}
+
+function formatStatusLabel(status?: string | null) {
+  if (!status) return 'Local-first mode';
+  return status
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
 export default function App() {
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
   const [workspacePath, setWorkspacePath] = useState('');
   const [workspaceContext, setWorkspaceContext] = useState<WorkspaceContext | null>(null);
-  const [modelConfig, setModelConfig] = useState<ModelConfig>(loadModelConfig());
+  const [modelConfig, setModelConfig] = useState<ModelConfig>(() => loadModelConfig());
   const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showWorkspaceInput, setShowWorkspaceInput] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isScanningWorkspace, setIsScanningWorkspace] = useState(false);
 
   const isTauri = isTauriRuntime();
 
+  const selectedTask = useMemo(() => {
+    if (!selectedTaskId) return null;
+    return tasks.find((task) => task.id === selectedTaskId) || null;
+  }, [tasks, selectedTaskId]);
+
+  const workspaceLabel = basename(workspacePath) || 'Select workspace';
+  const modelLabel = getModelLabel(modelConfig.selectedProvider, modelConfig.selectedModel);
+
   useEffect(() => {
-    loadTasks();
-    const lastWs = localStorage.getItem('codra_last_workspace');
-    if (lastWs) setWorkspacePath(lastWs);
+    let cancelled = false;
+
+    async function bootstrap() {
+      try {
+        const list = await listTasks();
+        if (!cancelled) {
+          setTasks(sortTasks(list));
+        }
+      } catch (cause) {
+        console.error('[Codra] Failed to load tasks:', cause);
+      }
+
+      const lastWorkspace = localStorage.getItem(LAST_WORKSPACE_KEY);
+      if (lastWorkspace && !cancelled) {
+        setWorkspacePath(lastWorkspace);
+        if (isTauri) {
+          void scanWorkspaceAtPath(lastWorkspace);
+        }
+      }
+    }
+
+    void bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadTasks() {
-    try { await listTasks(); } catch {}
-  }
+  useEffect(() => {
+    if (!selectedTaskId) {
+      setEvents([]);
+      return;
+    }
 
-  async function loadTaskEvents(taskId: string) {
+    const taskId = selectedTaskId;
+    let cancelled = false;
+
+    async function loadEvents() {
+      try {
+        const next = await getTaskEvents(taskId);
+        if (!cancelled) {
+          setEvents(next);
+        }
+      } catch (cause) {
+        console.error('[Codra] Failed to load task events:', cause);
+        if (!cancelled) {
+          setEvents([]);
+        }
+      }
+    }
+
+    void loadEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTaskId]);
+
+  async function scanWorkspaceAtPath(path: string) {
+    const nextPath = path.trim();
+    if (!nextPath) {
+      setWorkspaceContext(null);
+      return;
+    }
+
+    setIsScanningWorkspace(true);
     try {
-      const evts = await getTaskEvents(taskId);
-      setEvents(evts);
-    } catch {}
+      const ctx = await scanWorkspace(nextPath);
+      setWorkspaceContext(ctx);
+      setError(null);
+    } catch (cause) {
+      setWorkspaceContext(null);
+      setError(`Failed to scan workspace: ${String(cause)}`);
+    } finally {
+      setIsScanningWorkspace(false);
+    }
   }
 
   function handleNewThread() {
-    setSelectedTask(null);
+    setSelectedTaskId(null);
     setEvents([]);
     setPrompt('');
     setError(null);
   }
 
-  async function handleSelectTask(task: Task) {
-    setSelectedTask(task);
-    await loadTaskEvents(task.id);
+  function handleSelectTask(task: Task) {
+    setSelectedTaskId(task.id);
+    setError(null);
   }
 
   async function handleSelectWorkspace() {
     if (!isTauri) {
-      setError('Open Codra in the Tauri app window to use native folder picker.');
-      setShowWorkspaceInput(true);
+      setError('Open Codra in the desktop app window to use the native folder picker.');
       return;
     }
 
     try {
       const folder = await selectWorkspaceFolder();
-      if (folder) {
-        setWorkspacePath(folder);
-        localStorage.setItem('codra_last_workspace', folder);
-        setError(null);
-        // Auto-scan after selection
-        await handleScanWorkspaceWithPath(folder);
-      }
-    } catch (e: any) {
-      setError('Failed to select workspace: ' + String(e));
+      if (!folder) return;
+
+      setWorkspacePath(folder);
+      localStorage.setItem(LAST_WORKSPACE_KEY, folder);
+      await scanWorkspaceAtPath(folder);
+    } catch (cause) {
+      setError(`Failed to select workspace: ${String(cause)}`);
     }
   }
 
-  async function handleScanWorkspaceWithPath(path: string) {
-    if (!path.trim()) return;
-    setLoading(true);
-    try {
-      const ctx = await scanWorkspace(path.trim());
-      setWorkspaceContext(ctx);
-    } catch (e: any) {
-      setError('Failed to scan workspace: ' + String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
+  async function handleCreateTask() {
+    const trimmedWorkspace = workspacePath.trim();
+    const trimmedPrompt = prompt.trim();
 
-  async function handleScanWorkspace() {
-    await handleScanWorkspaceWithPath(workspacePath);
-  }
-
-  async function handleSubmitTask() {
-    if (!workspacePath.trim()) {
+    if (!trimmedWorkspace) {
       setError('Workspace path is required.');
       return;
     }
-    if (!prompt.trim()) {
+
+    if (!trimmedPrompt) {
       setError('Prompt is required.');
       return;
     }
+
     if (!isTauri) {
       setError('Tauri runtime unavailable. Open Codra in the desktop app window.');
       return;
     }
 
-    setLoading(true);
+    setIsCreatingTask(true);
     setError(null);
 
     try {
-      const newTask = await createTask({
-        workspace_path: workspacePath.trim(),
-        user_prompt: prompt.trim(),
-        title: prompt.trim().slice(0, 60),
+      const created = await createTask({
+        workspace_path: trimmedWorkspace,
+        user_prompt: trimmedPrompt,
+        title: trimmedPrompt.slice(0, 60),
       });
-      setSelectedTask(newTask);
-      await loadTaskEvents(newTask.id);
+
+      setTasks((current) => upsertTask(current, created));
+      setSelectedTaskId(created.id);
       setPrompt('');
-    } catch (e: any) {
-      setError('Failed to create task: ' + String(e));
+
+      try {
+        const nextEvents = await getTaskEvents(created.id);
+        setEvents(nextEvents);
+      } catch {
+        setEvents([]);
+      }
+    } catch (cause) {
+      setError(`Failed to create task: ${String(cause)}`);
     } finally {
-      setLoading(false);
+      setIsCreatingTask(false);
     }
   }
 
   function handleTaskUpdated(updated: Task) {
-    setSelectedTask(updated);
+    setTasks((current) => upsertTask(current, updated));
+    setError(null);
   }
 
-  function handleModelChange(cfg: ModelConfig) {
-    setModelConfig(cfg);
+  async function refreshEvents() {
+    if (!selectedTaskId) {
+      setEvents([]);
+      return;
+    }
+
+    try {
+      const next = await getTaskEvents(selectedTaskId);
+      setEvents(next);
+    } catch {
+      setEvents([]);
+    }
   }
 
-  const modelLabel = getModelLabel(modelConfig.selectedProvider, modelConfig.selectedModel);
-  const canRun = Boolean(workspacePath.trim() && prompt.trim());
+  const canCreateTask = Boolean(isTauri && workspacePath.trim() && prompt.trim() && !isCreatingTask);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#060910] text-zinc-100">
-      {/* Left Sidebar */}
-      <ThreadSidebar
-        selectedTaskId={selectedTask?.id || null}
-        onSelectTask={handleSelectTask}
-        onNewThread={handleNewThread}
-        onOpenWorkspace={handleSelectWorkspace}
-        currentWorkspace={workspacePath}
-      />
+    <div className="relative h-screen w-screen overflow-hidden bg-[#04060a] text-[#f4f7fb] selection:bg-white/15 selection:text-white">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(77,137,255,0.14),transparent_22%),radial-gradient(circle_at_86%_20%,rgba(77,137,255,0.08),transparent_20%),radial-gradient(circle_at_50%_120%,rgba(8,13,24,0.95),rgba(4,6,10,1)_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:78px_78px] opacity-35 [mask-image:radial-gradient(circle_at_center,rgba(0,0,0,0.92),rgba(0,0,0,0.25)_80%,transparent_100%)]" />
+      <div className="relative grid h-full w-full grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(260px,38vh)] gap-3 p-2 sm:p-3 lg:grid-cols-[320px_minmax(0,1fr)] lg:grid-rows-1">
+        <ThreadSidebar
+          className="order-2 min-h-0 lg:order-1"
+          tasks={tasks}
+          selectedTaskId={selectedTaskId}
+          onSelectTask={handleSelectTask}
+          onNewThread={handleNewThread}
+          onOpenWorkspace={handleSelectWorkspace}
+          currentWorkspace={workspacePath}
+          workspaceContext={workspaceContext}
+        />
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col">
-        {/* Premium Top App Bar */}
-        <div className="flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#070b12] px-6">
-          <div className="flex items-center gap-3">
-            <span className="font-semibold tracking-tight text-white">
-              {selectedTask ? selectedTask.title || 'Thread' : 'New thread'}
-            </span>
-            {workspacePath && (
-              <div className="flex items-center gap-1.5 rounded-full bg-white/[0.035] px-3 py-0.5 text-xs text-zinc-400">
-                <FolderOpen className="h-3 w-3" />
-                {workspacePath.split('/').pop()}
+        <main className="order-1 flex min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(11,15,24,0.96),rgba(7,10,16,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.52)] backdrop-blur-[18px] lg:order-2">
+          <header className="flex h-16 items-center justify-between gap-4 border-b border-white/[0.06] px-4 sm:px-6">
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Codra interface artifact</div>
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                <h1 className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
+                  {selectedTask ? selectedTask.title || 'Task thread' : 'What should Codra do in this workspace?'}
+                </h1>
+                {selectedTask ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(155,192,255,0.18)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff] shadow-[0_0_0_1px_rgba(77,137,255,0.04)_inset]">
+                    {formatStatusLabel(selectedTask.status)}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]">
+                    Local-first mode
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 text-sm">
-            <button
-              onClick={() => setShowWorkspaceInput(!showWorkspaceInput)}
-              className="flex items-center gap-1.5 rounded-md border border-white/[0.08] px-3 py-1 text-xs hover:bg-white/[0.04]"
-            >
-              Workspace
-            </button>
-            <button className="rounded-md p-2 hover:bg-white/[0.04]">
-              <Settings className="h-4 w-4" />
-            </button>
-            <div className="ml-1 flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] text-emerald-400">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Connected
             </div>
-          </div>
-        </div>
 
-        
-        { !isTauri && (
-          <div className="border-b border-amber-500/30 bg-amber-950/30 px-6 py-1.5 text-xs text-amber-400">
-            Tauri runtime unavailable — native workspace picker and task execution require the desktop app window.
-          </div>
-        )}
-        {/* Workspace input row */}
-        {showWorkspaceInput && (
-          <div className="flex items-center gap-3 border-b border-white/[0.06] bg-[#0a0f18] px-6 py-3">
-            <input
-              value={workspacePath}
-              onChange={(e) => setWorkspacePath(e.target.value)}
-              placeholder="/path/to/your/project"
-              className="flex-1 rounded-md border border-white/[0.08] bg-[#111724] px-4 py-2 text-sm focus:outline-none"
-            />
-            <button
-              onClick={handleScanWorkspace}
-              disabled={loading}
-              className="rounded-md border border-white/[0.1] px-4 py-2 text-sm hover:bg-white/[0.05]"
-            >
-              Scan
-            </button>
-            {workspaceContext && (
-              <span className="text-xs text-emerald-400">{workspaceContext.detected_stack.join(', ')}</span>
-            )}
-          </div>
-        )}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={handleSelectWorkspace}
+                className="inline-flex h-10 max-w-[16rem] items-center gap-2 rounded-2xl border border-white/[0.08] bg-[rgba(255,255,255,0.03)] px-3.5 text-sm text-[#f4f7fb] transition hover:border-[rgba(155,192,255,0.18)] hover:bg-[rgba(255,255,255,0.05)]"
+              >
+                <FolderOpen className="h-4 w-4 text-[#9bc0ff]" />
+                <span className="hidden sm:inline">Workspace</span>
+                <span className="max-w-[10rem] truncate text-[#96a0b4]">{workspaceLabel}</span>
+              </button>
 
-        {/* Main Area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Empty State + Composer */}
-          {!selectedTask && (
-            <div className="flex flex-1 items-center justify-center p-8">
-              <div className="w-full max-w-[640px]">
-                <div className="mb-8 text-center">
-                  <div className="text-4xl font-semibold tracking-tighter text-white">
-                    What should Codra do in this folder?
+              <div className="hidden items-center gap-1.5 rounded-full border border-[rgba(155,192,255,0.14)] bg-[rgba(77,137,255,0.08)] px-3 py-1.5 text-xs text-[#9bc0ff] md:inline-flex">
+                <div className="h-1.5 w-1.5 rounded-full bg-[#4d89ff] shadow-[0_0_12px_rgba(77,137,255,0.8)]" />
+                Daemon connected
+              </div>
+            </div>
+          </header>
+
+          {!isTauri && (
+            <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-950/20 px-4 py-2 text-xs text-amber-300 sm:px-6">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                Tauri runtime unavailable — native folder selection and task execution are only available in the desktop app window.
+              </span>
+            </div>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {!selectedTask ? (
+              <div className="flex h-full min-h-0 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+                <div className="mx-auto flex w-full max-w-[760px] flex-col justify-center">
+                  <div className="text-center">
+                    <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Codra interface artifact</div>
+                    <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                      What should Codra do in this workspace?
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-[42rem] text-sm leading-6 text-[#96a0b4] sm:text-[15px]">
+                      Codra scans the workspace, drafts a plan, and waits for your approval before it touches files.
+                    </p>
                   </div>
-                  <p className="mt-3 text-sm text-zinc-400">
-                    Codra will scan the workspace, create a plan, and execute only after your approval.
-                  </p>
-                </div>
 
-                {/* Premium Composer Card */}
-                <div className="rounded-2xl border border-white/[0.06] bg-[#0a0f18] p-1.5 shadow-2xl">
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Ask Codra to edit, explain, fix, refactor, or verify this workspace…"
-                    className="min-h-[130px] w-full resize-y bg-transparent px-5 py-4 text-[15px] placeholder:text-zinc-500 focus:outline-none"
-                  />
+                  <div className="mt-7 rounded-[28px] border border-white/[0.08] bg-[rgba(11,15,24,0.9)] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.42)] sm:p-5">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#070b12] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                        <FolderOpen className="h-4 w-4 shrink-0 text-[#9bc0ff]" />
+                        <input
+                          value={workspacePath}
+                          onChange={(event) => {
+                            setWorkspacePath(event.target.value);
+                            setError(null);
+                          }}
+                          onBlur={() => {
+                            if (workspacePath.trim()) {
+                              localStorage.setItem(LAST_WORKSPACE_KEY, workspacePath.trim());
+                            }
+                          }}
+                          placeholder="Select or type a workspace path"
+                          className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6f7889]"
+                        />
+                      </label>
 
-                  {/* Composer Footer */}
-                  <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <button className="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs text-zinc-400 hover:bg-white/[0.04]">
-                        <FolderOpen className="h-3.5 w-3.5" /> Context
+                      <button
+                        onClick={handleSelectWorkspace}
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[rgba(155,192,255,0.18)] bg-[linear-gradient(180deg,rgba(77,137,255,1),rgba(50,102,222,1))] px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(77,137,255,0.22),0_0_0_1px_rgba(255,255,255,0.05)_inset] transition hover:translate-y-[-1px] hover:shadow-[0_14px_36px_rgba(77,137,255,0.26),0_0_0_1px_rgba(255,255,255,0.05)_inset]"
+                      >
+                        {isTauri ? 'Browse workspace' : 'Open in Tauri'}
                       </button>
-                      <ModelPicker compact onChange={handleModelChange} />
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {!workspacePath && (
-                        <span className="text-xs text-amber-400">Select workspace to enable Run Task</span>
+                    {workspaceContext ? (
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#96a0b4]">
+                        <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
+                          Stack: {workspaceContext.detected_stack.slice(0, 2).join(' · ') || 'Unknown'}
+                        </span>
+                        {workspaceContext.git_branch && (
+                          <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
+                            Branch: {workspaceContext.git_branch}
+                          </span>
+                        )}
+                        <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
+                          {workspaceContext.is_git_repo ? 'Git repo' : 'Not a git repo'}
+                        </span>
+                        {workspaceContext.detected_config_files.slice(0, 2).map((file) => (
+                          <span key={file} className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
+                            {file}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <ModelPicker compact onChange={setModelConfig} />
+                      {isScanningWorkspace && (
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-[#96a0b4]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#4d89ff] animate-pulse" />
+                          Scanning workspace…
+                        </span>
                       )}
+                    </div>
+
+                    <textarea
+                      value={prompt}
+                      onChange={(event) => {
+                        setPrompt(event.target.value);
+                        setError(null);
+                      }}
+                      placeholder="Ask Codra to edit, explain, fix, refactor, or verify this workspace…"
+                      className="mt-4 min-h-[180px] w-full resize-y rounded-[22px] border border-white/[0.08] bg-[#070b12]/90 px-5 py-4 text-[15px] leading-6 text-white outline-none placeholder:text-[#6f7889] focus:border-[rgba(155,192,255,0.28)] focus:shadow-[0_0_0_1px_rgba(77,137,255,0.12),0_0_28px_rgba(77,137,255,0.08)]"
+                    />
+
+                    <div className="mt-4 flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm text-[#96a0b4]">
+                        Codra will not modify files until you approve the plan.
+                      </div>
                       <button
-                        onClick={handleSubmitTask}
-                        disabled={loading || !canRun}
-                        className="flex items-center gap-2 rounded-lg bg-white px-6 py-2 text-sm font-semibold text-black disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-200 active:bg-white"
+                        onClick={handleCreateTask}
+                        disabled={!canCreateTask}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Play className="h-4 w-4" />
-                        {loading ? 'Creating…' : 'Create Task'}
+                        {isCreatingTask ? 'Creating…' : 'Create Task'}
                       </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-4 text-center text-[10px] text-zinc-500">
-                  Codra will not modify files until you approve the plan.
-                </div>
               </div>
+            ) : (
+              <TaskThreadView
+                task={selectedTask}
+                events={events}
+                workspacePath={workspacePath}
+                workspaceContext={workspaceContext}
+                modelLabel={modelLabel}
+                onTaskUpdated={handleTaskUpdated}
+                onRefreshEvents={refreshEvents}
+              />
+            )}
+          </div>
+
+          {error && (
+            <div className="border-t border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300 sm:px-6">
+              {error}
             </div>
           )}
-
-          {/* Thread View */}
-          {selectedTask && (
-            <TaskThreadView
-              task={selectedTask}
-              events={events}
-              onTaskUpdated={handleTaskUpdated}
-              workspacePath={workspacePath}
-              modelLabel={modelLabel}
-            />
-          )}
-        </div>
-
-        {/* Error Banner */}
-        {error && (
-          <div className="border-t border-rose-500/30 bg-rose-950/30 px-6 py-2 text-sm text-rose-300">
-            {error}
-          </div>
-        )}
+        </main>
       </div>
     </div>
   );
