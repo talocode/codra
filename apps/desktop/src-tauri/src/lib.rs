@@ -4,7 +4,13 @@ use codra_core::executor::ExecutionOrchestrator;
 use codra_core::planner::PlannerService;
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider, LiveProvider};
 use codra_core::provider_config::ProviderConfigService;
+use codra_core::command_runner::RealCommandRunner;
 use codra_core::repair::RepairService;
+use codra_core::task_executor::TaskExecutor;
+use codra_core::task_lifecycle::TaskLifecycle;
+use codra_core::task_planner::TaskPlanner;
+use codra_core::task_store::TaskStore;
+use codra_core::task_verifier::TaskVerifier;
 use codra_core::verifier::VerificationService;
 use codra_protocol::*;
 use codra_tools::computer_use::{default_adapter, ComputerUseAdapter};
@@ -714,6 +720,7 @@ fn get_provider_readiness(state: State<'_, AppState>) -> Result<ProviderHealthRe
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let config_dir = app
                 .path()
@@ -766,8 +773,137 @@ pub fn run() {
             list_registered_tools,
             execute_computer_use_action,
             load_workspace_design_system,
-            get_codra_shell_data
+            get_codra_shell_data,
+            codra_create_task,
+            codra_list_tasks,
+            codra_get_task,
+            codra_get_task_events,
+            codra_scan_workspace,
+            codra_approve_task,
+            codra_cancel_task,
+            codra_execute_task,
+            codra_run_verification,
+            codra_approve_repair,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+// === Agent Task Loop Tauri Commands ===
+
+#[tauri::command]
+fn codra_create_task(
+    state: State<AppState>,
+    workspace_path: String,
+    user_prompt: String,
+    title: Option<String>,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let planner = TaskPlanner::new(task_store);
+    planner.create_task(&workspace_path, &user_prompt, title.as_deref())
+}
+
+#[tauri::command]
+fn codra_approve_task(
+    task_id: String,
+    workspace_path: String,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let lifecycle = TaskLifecycle::new(task_store);
+    lifecycle.approve_task(&task_id)
+}
+
+#[tauri::command]
+fn codra_execute_task(
+    task_id: String,
+    workspace_path: String,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let executor = TaskExecutor::<RealCommandRunner>::new(task_store);
+    executor.execute_approved_task(&task_id)
+}
+
+#[tauri::command]
+fn codra_list_tasks(workspace_path: String) -> Result<Vec<codra_protocol::Task>, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    task_store.list_tasks()
+}
+
+#[tauri::command]
+fn codra_get_task(task_id: String, workspace_path: String) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    task_store.load_task(&task_id)
+}
+
+#[tauri::command]
+fn codra_get_task_events(
+    task_id: String,
+    workspace_path: String,
+) -> Result<Vec<codra_protocol::TaskEvent>, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    task_store.list_events(&task_id)
+}
+
+#[tauri::command]
+fn codra_scan_workspace(
+    workspace_path: String,
+) -> Result<codra_protocol::WorkspaceContext, String> {
+    codra_core::workspace_scanner::WorkspaceScanner::scan(&workspace_path)
+}
+
+#[tauri::command]
+fn codra_cancel_task(
+    task_id: String,
+    workspace_path: String,
+    reason: Option<String>,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let lifecycle = TaskLifecycle::new(task_store);
+    lifecycle.cancel_task(&task_id, reason.as_deref())
+}
+
+#[tauri::command]
+fn codra_run_verification(
+    task_id: String,
+    workspace_path: String,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let verifier = TaskVerifier::<RealCommandRunner>::new(task_store.clone(), RealCommandRunner);
+    // Simplified: just return the task after attempting verification
+    let _ = verifier.run_verification(&task_id, None);
+    task_store.load_task(&task_id)
+}
+
+#[tauri::command]
+fn codra_approve_repair(
+    task_id: String,
+    workspace_path: String,
+) -> Result<codra_protocol::Task, String> {
+    let task_store = TaskStore::new(&workspace_path);
+    let mut task = task_store.load_task(&task_id)?;
+    if task.status != codra_protocol::TaskStatus::AwaitingRepairApproval {
+        return Err("Can only approve repair from AwaitingRepairApproval state".to_string());
+    }
+    task.status = codra_protocol::TaskStatus::Repairing;
+    task_store.save_task(&task)?;
+    // Append event
+    let event = codra_protocol::TaskEvent {
+        id: format!(
+            "evt_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs()
+        ),
+        task_id: task_id.clone(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            .to_string(),
+        event_type: "repair.approved".to_string(),
+        message: "Repair approved from UI".to_string(),
+    };
+    let _ = task_store.append_event(&event);
+    Ok(task)
 }

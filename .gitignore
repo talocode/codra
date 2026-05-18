@@ -15,6 +15,7 @@ src-tauri/gen/apple
 src-tauri/gen/android
 
 # Codra internal
+.codra/
 .codra/plans/*.json
 .codra/executions/*.log
 .codra/verifications/*.json
