@@ -4,10 +4,8 @@ use codra_core::{
     workspace_scanner::WorkspaceScanner,
 };
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Instant;
 
-#[derive(Clone)]
 pub struct DaemonState {
     pub task_store: TaskStore,
     pub task_planner: TaskPlanner,

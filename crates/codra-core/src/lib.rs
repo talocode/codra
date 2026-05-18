@@ -27,8 +27,8 @@ impl ExecutionContext {
 pub mod command_runner;
 pub mod command_safety;
 pub mod file_changes;
+pub mod task_executor;
 pub mod task_lifecycle;
 pub mod task_planner;
 pub mod task_verifier;
 pub mod workspace_scanner;
-pub mod task_executor;
