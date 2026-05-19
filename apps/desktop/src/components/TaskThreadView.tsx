@@ -1,5 +1,15 @@
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, Check, Clock, Terminal, Play } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Clock3,
+  GitBranch,
+  Play,
+  Sparkles,
+  TerminalSquare,
+  Wand2,
+  X,
+} from "lucide-react";
 import {
   approveRepair,
   approveTask,
@@ -14,6 +24,8 @@ interface TaskThreadViewProps {
   workspacePath: string;
   workspaceContext: WorkspaceContext | null;
   modelLabel: string;
+  providerLabel?: string;
+  providerRuntimeStatus?: string;
   onTaskUpdated: (task: Task) => void | Promise<void>;
   onRefreshEvents?: () => void | Promise<void>;
 }
@@ -24,6 +36,8 @@ export function TaskThreadView({
   workspacePath,
   workspaceContext,
   modelLabel,
+  providerLabel = "Selected model",
+  providerRuntimeStatus = "ready",
   onTaskUpdated,
   onRefreshEvents,
 }: TaskThreadViewProps) {
@@ -49,8 +63,7 @@ export function TaskThreadView({
   }
 
   const status = task.status;
-  const workspaceLabel =
-    workspaceContext?.workspacePath || workspacePath || task.workspacePath;
+  const workspaceLabel = workspaceContext?.workspacePath || workspacePath || task.workspacePath;
   const currentWorkspaceName = basename(workspaceLabel);
   const statusLabel = formatStatusLabel(status);
   const canRun = status === "approved";
@@ -58,256 +71,172 @@ export function TaskThreadView({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="border-b border-white/[0.06] px-4 py-4 sm:px-6 sm:py-5">
+      <div className="border-b border-[color:var(--border)] px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+            <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">
               Task thread
             </div>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-              <h2 className="truncate text-lg font-semibold tracking-tight text-white">
-                {task.title || "Untitled thread"}
-              </h2>
-              <span className="inline-flex items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]">
-                {statusLabel}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]">
-                {modelLabel}
-              </span>
+            <h2 className="mt-2 truncate text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+              {task.title || "Untitled thread"}
+            </h2>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+              <Badge>{statusLabel}</Badge>
+              <Badge icon={<Sparkles className="h-3 w-3" />}>{providerLabel}</Badge>
+              <Badge>{modelLabel}</Badge>
+              <Badge>{providerRuntimeStatus}</Badge>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#96a0b4]">
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[var(--text-muted)]">
               <span>{currentWorkspaceName}</span>
-              <span>·</span>
+              <span>•</span>
               <span className="truncate">{task.workspacePath}</span>
+              {workspaceContext?.gitBranch ? (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <GitBranch className="h-3.5 w-3.5" />
+                    {workspaceContext.gitBranch}
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
 
-          <div className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-[#96a0b4]">
+          <div className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2 text-xs text-[var(--text-muted)]">
             {task.id.slice(0, 8)}
           </div>
         </div>
       </div>
 
       {actionError && (
-        <div className="border-b border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300 sm:px-6">
+        <div className="border-b border-[color:var(--danger-border)] bg-[var(--danger-soft)] px-5 py-3 text-sm text-[var(--danger-text)] sm:px-6">
           {actionError}
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        <div className="space-y-4 sm:space-y-5">
-          <StreamCard eyebrow="You" title="Prompt" tone="default">
-            <p className="whitespace-pre-wrap text-[15px] leading-7 text-white">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="space-y-4">
+          <StreamCard eyebrow="Prompt" title="What should Codra build?" icon={<Wand2 className="h-4 w-4" />}>
+            <p className="whitespace-pre-wrap text-[15px] leading-7 text-[var(--text-primary)]">
               {task.userPrompt}
             </p>
           </StreamCard>
 
-          <StreamCard
-            eyebrow="Workspace scan"
-            title="Repository context"
-            tone="blue"
-          >
+          <StreamCard eyebrow="Workspace" title="Project context" icon={<TerminalSquare className="h-4 w-4" />}>
             {workspaceContext ? (
-              <div className="space-y-4 text-sm text-[#d7deea]">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoRow
-                    label="Workspace"
-                    value={workspaceContext.workspacePath}
-                  />
-                  <InfoRow
-                    label="Repository"
-                    value={
-                      workspaceContext.isGitRepo ? "Git repo" : "Not a git repo"
-                    }
-                  />
-                  <InfoRow
-                    label="Branch"
-                    value={workspaceContext.gitBranch || "—"}
-                  />
-                  <InfoRow
-                    label="Stack"
-                    value={
-                      workspaceContext.detectedStack.join(" · ") || "Unknown"
-                    }
-                  />
+              <div className="space-y-4 text-sm text-[var(--text-primary)]">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <InfoRow label="Workspace" value={workspaceContext.workspacePath} />
+                  <InfoRow label="Repository" value={workspaceContext.isGitRepo ? "Git repo" : "Not a git repo"} />
+                  <InfoRow label="Branch" value={workspaceContext.gitBranch || "—"} />
+                  <InfoRow label="Stack" value={workspaceContext.detectedStack.join(" · ") || "Unknown"} />
                 </div>
 
                 {workspaceContext.gitStatusSummary && (
-                  <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3 text-sm text-[#96a0b4]">
-                    {workspaceContext.gitStatusSummary}
-                  </div>
+                  <PanelText>{workspaceContext.gitStatusSummary}</PanelText>
                 )}
 
                 {workspaceContext.detectedConfigFiles.length > 0 && (
-                  <div>
-                    <div className="mb-2 text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
-                      Config files
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {workspaceContext.detectedConfigFiles
-                        .slice(0, 6)
-                        .map((file) => (
-                          <span
-                            key={file}
-                            className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-xs text-[#96a0b4]"
-                          >
-                            {file}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
+                  <TokenGroup
+                    label="Config files"
+                    values={workspaceContext.detectedConfigFiles.slice(0, 6)}
+                  />
                 )}
 
                 {workspaceContext.suggestedCommands.length > 0 && (
                   <div>
-                    <div className="mb-2 text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+                    <div className="mb-2 text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
                       Suggested commands
                     </div>
                     <div className="space-y-2">
-                      {workspaceContext.suggestedCommands
-                        .slice(0, 3)
-                        .map((command) => (
-                          <div
-                            key={command.command}
-                            className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="truncate font-mono text-xs text-white">
-                                $ {command.command}
-                              </div>
-                              <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] uppercase tracking-[0.24em] text-[#96a0b4]">
-                                {command.riskLevel}
-                              </span>
+                      {workspaceContext.suggestedCommands.slice(0, 3).map((command) => (
+                        <div
+                          key={command.command}
+                          className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="truncate font-mono text-xs text-[var(--text-primary)]">
+                              $ {command.command}
                             </div>
-                            <div className="mt-2 text-sm leading-6 text-[#96a0b4]">
-                              {command.reason}
-                            </div>
+                            <Badge>{command.riskLevel}</Badge>
                           </div>
-                        ))}
+                          <div className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                            {command.reason}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-                Workspace scan will appear here after Codra selects or scans a
-                folder.
-              </div>
+              <PanelText>Workspace scan data will appear here after Codra loads project context.</PanelText>
             )}
           </StreamCard>
 
-          <StreamCard eyebrow="Memory" title="Relevant memory" tone="amber">
-            <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-              <div className="text-sm font-medium text-white">
-                Memory layer coming next.
-              </div>
-              <p className="mt-2">
-                This card is reserved for remembered project facts, approval
-                habits, and task-specific reminders.
-              </p>
-            </div>
-          </StreamCard>
-
-          <StreamCard eyebrow="Plan" title="Execution plan" tone="default">
+          <StreamCard eyebrow="Plan" title="Review before change" icon={<Check className="h-4 w-4" />}>
             {task.plan ? (
-              <div className="space-y-4 text-sm text-[#d7deea]">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[#96a0b4]">
-                  <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
-                    Risk: {task.plan.riskLevel}
-                  </span>
-                  <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
-                    {task.plan.requiresApproval
-                      ? "Approval required"
-                      : "Auto-approve"}
-                  </span>
+              <div className="space-y-4 text-sm text-[var(--text-primary)]">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                  <Badge>Risk: {task.plan.riskLevel}</Badge>
+                  <Badge>{task.plan.requiresApproval ? "Approval required" : "Auto approve"}</Badge>
                 </div>
 
-                <p className="text-[15px] leading-7 text-white">
-                  {task.plan.summary}
-                </p>
+                <p className="text-[15px] leading-7 text-[var(--text-primary)]">{task.plan.summary}</p>
 
                 <div className="space-y-3">
                   {task.plan.steps.map((step, index) => (
                     <div
                       key={step.id}
-                      className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
+                      className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-3"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-xs text-[#9bc0ff]">
+                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color:var(--border)] bg-[var(--panel-base)] text-xs text-[var(--accent)]">
                           {index + 1}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-medium text-white">
-                            {step.title}
-                          </div>
-                          <div className="mt-1 text-sm leading-6 text-[#96a0b4]">
-                            {step.description}
-                          </div>
+                          <div className="font-medium text-[var(--text-primary)]">{step.title}</div>
+                          <div className="mt-1 text-sm leading-6 text-[var(--text-muted)]">{step.description}</div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <InfoRow
-                    label="Read"
-                    value={task.plan.filesToRead.join(", ") || "—"}
-                  />
-                  <InfoRow
-                    label="Modify"
-                    value={task.plan.filesToModify.join(", ") || "—"}
-                  />
-                  <InfoRow
-                    label="Commands"
-                    value={task.plan.commandsToRun.join(" · ") || "—"}
-                  />
+                <div className="grid gap-3 lg:grid-cols-3">
+                  <InfoRow label="Read" value={task.plan.filesToRead.join(", ") || "—"} />
+                  <InfoRow label="Modify" value={task.plan.filesToModify.join(", ") || "—"} />
+                  <InfoRow label="Commands" value={task.plan.commandsToRun.join(" · ") || "—"} />
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-                Plan generation is still in progress.
-              </div>
+              <PanelText>Codra is still drafting the plan for this task.</PanelText>
             )}
           </StreamCard>
 
-          {(status === "awaiting_repair_approval" ||
-            status === "failed" ||
-            hasRepairPlan) && (
-            <StreamCard eyebrow="Repair" title="Repair summary" tone="rose">
-              <div className="space-y-4 text-sm text-[#d7deea]">
-                <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4">
-                  <div className="flex items-center gap-2 text-[#f07d97]">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">
-                      Repair / failure context
-                    </span>
-                  </div>
-                  <p className="mt-2 whitespace-pre-wrap leading-7 text-white">
-                    {task.repairPlan?.summary ||
-                      task.error ||
-                      "Codra will summarize the repair path here if the execution pass needs follow-up."}
-                  </p>
-                </div>
+          {(status === "awaiting_repair_approval" || status === "failed" || hasRepairPlan) && (
+            <StreamCard eyebrow="Repair" title="Repair summary" tone="danger" icon={<AlertTriangle className="h-4 w-4" />}>
+              <div className="space-y-4 text-sm text-[var(--text-primary)]">
+                <PanelText tone="danger">
+                  {task.repairPlan?.summary ||
+                    task.error ||
+                    "Codra will summarize the repair path here if execution needs follow-up."}
+                </PanelText>
 
                 {task.repairPlan?.steps?.length ? (
                   <div className="space-y-2">
                     {task.repairPlan.steps.map((step, index) => (
                       <div
                         key={step.id}
-                        className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
+                        className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-3"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(240,125,151,0.16)] bg-[rgba(240,125,151,0.08)] text-xs text-[#f07d97]">
+                          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[var(--danger-soft)] text-xs text-[var(--danger-text)]">
                             {index + 1}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-medium text-white">
-                              {step.title}
-                            </div>
-                            <div className="mt-1 text-sm leading-6 text-[#96a0b4]">
-                              {step.description}
-                            </div>
+                            <div className="font-medium text-[var(--text-primary)]">{step.title}</div>
+                            <div className="mt-1 text-sm leading-6 text-[var(--text-muted)]">{step.description}</div>
                           </div>
                         </div>
                       </div>
@@ -318,278 +247,168 @@ export function TaskThreadView({
             </StreamCard>
           )}
 
-          <StreamCard
-            eyebrow="Approval"
-            title="Safety gate"
-            tone={approvalTone(status)}
-          >
+          <StreamCard eyebrow="Approval" title="Prompt. Review. Approve. Run." icon={<Play className="h-4 w-4" />}>
             {status === "awaiting_approval" && (
-              <div className="space-y-4">
-                <p className="text-sm leading-6 text-[#d7deea]">
-                  Review the plan above before Codra can modify files.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        approveTask(task.id, task.workspacePath),
-                      )
-                    }
-                    disabled={loading}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(180deg,rgba(77,137,255,1),rgba(50,102,222,1))] px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(77,137,255,0.22),0_0_0_1px_rgba(255,255,255,0.05)_inset] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Check className="h-4 w-4" />
-                    Approve plan
-                  </button>
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        cancelTask(
-                          task.id,
-                          task.workspacePath,
-                          "User cancelled",
-                        ),
-                      )
-                    }
-                    disabled={loading}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-white/[0.08] bg-[rgba(255,255,255,0.03)] px-4 text-sm font-medium text-white transition hover:bg-[rgba(255,255,255,0.05)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+              <ActionPanel
+                description="Codra will show a plan before changing files. Review it above, then approve to continue."
+                primaryAction={{
+                  label: "Approve plan",
+                  icon: <Check className="h-4 w-4" />,
+                  onClick: () => runMutation(() => approveTask(task.id, task.workspacePath)),
+                  disabled: loading,
+                }}
+                secondaryAction={{
+                  label: "Cancel",
+                  icon: <X className="h-4 w-4" />,
+                  onClick: () =>
+                    runMutation(() => cancelTask(task.id, task.workspacePath, "User cancelled")),
+                  disabled: loading,
+                }}
+              />
             )}
 
             {status === "approved" && (
-              <div className="space-y-4">
-                <p className="text-sm leading-6 text-[#d7deea]">
-                  The plan is approved. Run Codra when you are ready.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        executeTask(task.id, task.workspacePath),
-                      )
-                    }
-                    disabled={loading || !canRun}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(180deg,rgba(77,137,255,1),rgba(50,102,222,1))] px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(77,137,255,0.22),0_0_0_1px_rgba(255,255,255,0.05)_inset] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Play className="h-4 w-4" />
-                    Run task
-                  </button>
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        cancelTask(
-                          task.id,
-                          task.workspacePath,
-                          "User cancelled",
-                        ),
-                      )
-                    }
-                    disabled={loading}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-white/[0.08] bg-[rgba(255,255,255,0.03)] px-4 text-sm font-medium text-white transition hover:bg-[rgba(255,255,255,0.05)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+              <ActionPanel
+                description="The plan is approved. Run Codra when you are ready."
+                primaryAction={{
+                  label: "Run task",
+                  icon: <Play className="h-4 w-4" />,
+                  onClick: () => runMutation(() => executeTask(task.id, task.workspacePath)),
+                  disabled: loading || !canRun,
+                }}
+                secondaryAction={{
+                  label: "Cancel",
+                  icon: <X className="h-4 w-4" />,
+                  onClick: () =>
+                    runMutation(() => cancelTask(task.id, task.workspacePath, "User cancelled")),
+                  disabled: loading,
+                }}
+              />
             )}
 
-            {(status === "executing" ||
-              status === "verifying" ||
-              status === "repairing") && (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm text-[#96a0b4]">
-                <Clock className="h-4 w-4 animate-pulse text-[#9bc0ff]" />
-                <div>
-                  <div className="font-medium text-white">{statusLabel}</div>
-                  <div className="mt-1 leading-6 text-[#96a0b4]">
-                    Codra is running safe allowlisted commands in the workspace.
-                  </div>
-                </div>
-              </div>
+            {(status === "executing" || status === "verifying" || status === "repairing") && (
+              <PanelText>
+                <span className="inline-flex items-center gap-2 font-medium text-[var(--text-primary)]">
+                  <Clock3 className="h-4 w-4 animate-pulse text-[var(--accent)]" />
+                  {statusLabel}
+                </span>
+                <span className="mt-2 block text-[var(--text-muted)]">
+                  Codra is running safe allowlisted commands in the workspace.
+                </span>
+              </PanelText>
             )}
 
             {status === "awaiting_repair_approval" && (
-              <div className="space-y-4">
-                <p className="text-sm leading-6 text-[#d7deea]">
-                  Codra generated a repair pass. Approve it to continue.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        approveRepair(task.id, task.workspacePath),
-                      )
-                    }
-                    disabled={loading}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(180deg,rgba(77,137,255,1),rgba(50,102,222,1))] px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(77,137,255,0.22),0_0_0_1px_rgba(255,255,255,0.05)_inset] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Check className="h-4 w-4" />
-                    Approve repair
-                  </button>
-                  <button
-                    onClick={() =>
-                      runMutation(() =>
-                        cancelTask(
-                          task.id,
-                          task.workspacePath,
-                          "User cancelled",
-                        ),
-                      )
-                    }
-                    disabled={loading}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-white/[0.08] bg-[rgba(255,255,255,0.03)] px-4 text-sm font-medium text-white transition hover:bg-[rgba(255,255,255,0.05)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+              <ActionPanel
+                description="Codra generated a repair pass. Review it above, then approve if you want the retry to continue."
+                primaryAction={{
+                  label: "Approve repair",
+                  icon: <Check className="h-4 w-4" />,
+                  onClick: () => runMutation(() => approveRepair(task.id, task.workspacePath)),
+                  disabled: loading,
+                }}
+                secondaryAction={{
+                  label: "Cancel",
+                  icon: <X className="h-4 w-4" />,
+                  onClick: () =>
+                    runMutation(() => cancelTask(task.id, task.workspacePath, "User cancelled")),
+                  disabled: loading,
+                }}
+              />
             )}
 
-            {status === "completed" && (
-              <div className="rounded-2xl border border-[rgba(77,137,255,0.16)] bg-[rgba(77,137,255,0.08)] px-4 py-4 text-sm leading-6 text-[#d7deea]">
-                Task complete. Review the final report below for the
-                authoritative result.
-              </div>
-            )}
-
-            {status === "failed" && (
-              <div className="rounded-2xl border border-[rgba(240,125,151,0.18)] bg-[rgba(240,125,151,0.08)] px-4 py-4 text-sm leading-6 text-[#f6c0cc]">
-                Task failed. Review the repair summary and command output above
-                before retrying.
-              </div>
-            )}
+            {status === "completed" && <PanelText>Task complete. Review the final report below for the authoritative result.</PanelText>}
+            {status === "failed" && <PanelText tone="danger">Task failed. Review the repair summary and command output before retrying.</PanelText>}
           </StreamCard>
 
-          <StreamCard eyebrow="Execution" title="Command trace" tone="default">
-            <div className="space-y-3 text-sm text-[#d7deea]">
+          <StreamCard eyebrow="Execution" title="Command trace" icon={<TerminalSquare className="h-4 w-4" />}>
+            <div className="space-y-3 text-sm text-[var(--text-primary)]">
               {task.commandsRun.length > 0 ? (
                 task.commandsRun.map((commandRun, index) => (
                   <div
                     key={`${commandRun.command}-${index}`}
-                    className="rounded-2xl border border-white/[0.06] bg-black/25 p-4"
+                    className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-[#6f7889]">
-                          <Terminal className="h-3.5 w-3.5 text-[#9bc0ff]" />
+                        <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
                           Command {index + 1}
                         </div>
-                        <div className="mt-2 font-mono text-xs text-white">
-                          $ {commandRun.command}
-                        </div>
+                        <div className="mt-2 font-mono text-xs text-[var(--text-primary)]">$ {commandRun.command}</div>
                       </div>
-                      <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] uppercase tracking-[0.24em] text-[#96a0b4]">
-                        {commandRun.status}
-                      </span>
+                      <Badge>{commandRun.status}</Badge>
                     </div>
 
-                    <div className="mt-3 grid gap-2 text-xs text-[#96a0b4] sm:grid-cols-3">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
                       <InfoRow label="cwd" value={commandRun.cwd} />
-                      <InfoRow
-                        label="exit"
-                        value={commandRun.exitCode?.toString() ?? "—"}
-                      />
+                      <InfoRow label="exit" value={commandRun.exitCode?.toString() ?? "—"} />
                       <InfoRow label="status" value={commandRun.status} />
                     </div>
 
                     {(commandRun.stdoutPreview || commandRun.stderrPreview) && (
                       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                        {commandRun.stdoutPreview && (
-                          <pre className="max-h-40 overflow-auto rounded-2xl border border-white/[0.06] bg-[#070b12] p-3 font-mono text-xs leading-6 text-[#d7deea] whitespace-pre-wrap">
+                        {commandRun.stdoutPreview ? (
+                          <pre className="max-h-44 overflow-auto rounded-2xl border border-[color:var(--border)] bg-[var(--panel-base)] p-3 font-mono text-xs leading-6 text-[var(--text-primary)] whitespace-pre-wrap">
                             {commandRun.stdoutPreview}
                           </pre>
-                        )}
-                        {commandRun.stderrPreview && (
-                          <pre className="max-h-40 overflow-auto rounded-2xl border border-[rgba(240,125,151,0.18)] bg-[rgba(240,125,151,0.08)] p-3 font-mono text-xs leading-6 text-[#f6c0cc] whitespace-pre-wrap">
+                        ) : null}
+                        {commandRun.stderrPreview ? (
+                          <pre className="max-h-44 overflow-auto rounded-2xl border border-[color:var(--danger-border)] bg-[var(--danger-soft)] p-3 font-mono text-xs leading-6 text-[var(--danger-text)] whitespace-pre-wrap">
                             {commandRun.stderrPreview}
                           </pre>
-                        )}
+                        ) : null}
                       </div>
                     )}
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-                  Execution output will appear here after the task runs.
-                </div>
+                <PanelText>Execution output will appear here after the task runs.</PanelText>
               )}
             </div>
           </StreamCard>
 
-          <StreamCard eyebrow="Report" title="Final report" tone="emerald">
+          <StreamCard eyebrow="Report" title="Final report" icon={<Sparkles className="h-4 w-4" />}>
             {task.finalReport ? (
-              <div className="space-y-4 text-sm leading-7 text-[#d7deea]">
-                <pre className="whitespace-pre-wrap rounded-2xl border border-white/[0.06] bg-black/25 p-4 font-sans text-[15px] leading-7 text-white">
+              <div className="space-y-4 text-sm leading-7 text-[var(--text-primary)]">
+                <pre className="whitespace-pre-wrap rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-4 font-sans text-[15px] leading-7 text-[var(--text-primary)]">
                   {task.finalReport}
                 </pre>
-                {task.verificationResult && (
-                  <div className="rounded-2xl border border-white/[0.06] bg-black/25 p-4 text-sm text-[#96a0b4]">
-                    <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
-                      Verification
-                    </div>
-                    <div className="mt-2 text-white">
-                      {task.verificationResult.summary}
-                    </div>
-                    {task.verificationResult.errors.length > 0 && (
-                      <ul className="mt-3 list-disc space-y-1 pl-5 text-[#f6c0cc]">
-                        {task.verificationResult.errors.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                )}
+                {task.verificationResult ? (
+                  <VerificationBlock result={task.verificationResult} />
+                ) : null}
               </div>
             ) : task.verificationResult ? (
-              <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-7 text-[#d7deea]">
-                <div className="font-medium text-white">
-                  {task.verificationResult.summary}
-                </div>
-                {task.verificationResult.errors.length > 0 && (
-                  <ul className="mt-3 list-disc space-y-1 pl-5 text-[#f6c0cc]">
-                    {task.verificationResult.errors.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <VerificationBlock result={task.verificationResult} />
             ) : (
-              <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-                The final report will appear here once Codra completes the task.
-              </div>
+              <PanelText>The final report will appear here once Codra completes the task.</PanelText>
             )}
           </StreamCard>
 
-          <details className="group rounded-[22px] border border-white/[0.06] bg-[#0a0f18] p-4 sm:p-5">
-            <summary className="cursor-pointer list-none text-sm font-medium text-white outline-none">
-              <span className="inline-flex items-center gap-2 text-[#9bc0ff]">
-                <Clock className="h-4 w-4" />
+          <details className="group rounded-[24px] border border-[color:var(--border)] bg-[var(--panel-card)] p-4 sm:p-5">
+            <summary className="cursor-pointer list-none text-sm font-medium text-[var(--text-primary)] outline-none">
+              <span className="inline-flex items-center gap-2 text-[var(--accent)]">
+                <Clock3 className="h-4 w-4" />
                 Timeline ({events.length} events)
               </span>
             </summary>
 
-            <div className="mt-4 space-y-2 border-l border-white/[0.08] pl-4 text-xs text-[#96a0b4]">
+            <div className="mt-4 space-y-2 border-l border-[color:var(--border)] pl-4 text-xs text-[var(--text-muted)]">
               {events.length > 0 ? (
-                events.slice(0, 10).map((event) => (
+                events.slice(0, 20).map((event) => (
                   <div
                     key={event.id}
-                    className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
+                    className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-3"
                   >
-                    <div className="text-[10px] uppercase tracking-[0.24em] text-[#6f7889]">
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
                       {formatTimestamp(event.timestamp)} · {event.eventType}
                     </div>
-                    <div className="mt-2 text-sm leading-6 text-[#d7deea]">
+                    <div className="mt-2 text-sm leading-6 text-[var(--text-primary)]">
                       {event.message}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-6 text-[#96a0b4]">
-                  Timeline events will appear once the task starts moving.
-                </div>
+                <PanelText>Timeline events will appear once the task starts moving.</PanelText>
               )}
             </div>
           </details>
@@ -602,34 +421,30 @@ export function TaskThreadView({
 function StreamCard({
   eyebrow,
   title,
-  tone,
+  icon,
   children,
+  tone = "default",
 }: {
   eyebrow: string;
   title: string;
-  tone: "default" | "blue" | "amber" | "rose" | "emerald";
+  icon?: ReactNode;
   children: ReactNode;
+  tone?: "default" | "danger";
 }) {
-  const styles = toneStyles[tone];
-
   return (
     <section
       className={[
-        "rounded-[22px] border p-4 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
-        styles.wrapper,
+        "rounded-[24px] border p-4 sm:p-5",
+        tone === "danger"
+          ? "border-[color:var(--danger-border)] bg-[var(--danger-card)]"
+          : "border-[color:var(--border)] bg-[var(--panel-card)]",
       ].join(" ")}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <div
-            className={[
-              "text-[10px] uppercase tracking-[0.34em]",
-              styles.eyebrow,
-            ].join(" ")}
-          >
-            {eyebrow}
-          </div>
-          <div className="mt-1 text-base font-medium tracking-[-0.02em] text-white">
+          <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">{eyebrow}</div>
+          <div className="mt-1 flex items-center gap-2 text-base font-medium tracking-[-0.02em] text-[var(--text-primary)]">
+            {icon}
             {title}
           </div>
         </div>
@@ -639,37 +454,109 @@ function StreamCard({
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function ActionPanel({
+  description,
+  primaryAction,
+  secondaryAction,
+}: {
+  description: string;
+  primaryAction: { label: string; icon: ReactNode; onClick: () => void; disabled?: boolean };
+  secondaryAction: { label: string; icon: ReactNode; onClick: () => void; disabled?: boolean };
+}) {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3">
-      <div className="text-[10px] uppercase tracking-[0.28em] text-[#6f7889]">
-        {label}
+    <div className="space-y-4">
+      <p className="text-sm leading-6 text-[var(--text-muted)]">{description}</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={primaryAction.onClick}
+          disabled={primaryAction.disabled}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {primaryAction.icon}
+          {primaryAction.label}
+        </button>
+        <button
+          type="button"
+          onClick={secondaryAction.onClick}
+          disabled={secondaryAction.disabled}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 text-sm font-medium text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {secondaryAction.icon}
+          {secondaryAction.label}
+        </button>
       </div>
-      <div className="mt-2 truncate text-sm leading-6 text-white">{value}</div>
     </div>
   );
 }
 
-function approvalTone(
-  status: Task["status"],
-): "default" | "blue" | "amber" | "rose" | "emerald" {
-  switch (status) {
-    case "awaiting_approval":
-    case "approved":
-      return "blue";
-    case "awaiting_repair_approval":
-    case "failed":
-      return "rose";
-    case "executing":
-    case "verifying":
-    case "repairing":
-    case "repair_planning":
-      return "amber";
-    case "completed":
-      return "emerald";
-    default:
-      return "default";
-  }
+function VerificationBlock({ result }: { result: NonNullable<Task["verificationResult"]> }) {
+  return (
+    <div className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-4 text-sm text-[var(--text-primary)]">
+      <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">Verification</div>
+      <div className="mt-2 text-[var(--text-primary)]">{result.summary}</div>
+      {result.errors.length > 0 ? (
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-[var(--danger-text)]">
+          {result.errors.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function TokenGroup({ label, values }: { label: string; values: string[] }) {
+  return (
+    <div>
+      <div className="mb-2 text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {values.map((value) => (
+          <Badge key={value}>{value}</Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PanelText({ children, tone = "default" }: { children: ReactNode; tone?: "default" | "danger" }) {
+  return (
+    <div
+      className={[
+        "rounded-2xl border px-4 py-4 text-sm leading-6",
+        tone === "danger"
+          ? "border-[color:var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger-text)]"
+          : "border-[color:var(--border)] bg-[var(--panel-muted)] text-[var(--text-muted)]",
+      ].join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Badge({ children, icon }: { children: ReactNode; icon?: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[var(--panel-muted)] px-2.5 py-1 text-[10px] font-medium text-[var(--text-muted)]">
+      {icon}
+      {children}
+    </span>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-3">
+      <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">{label}</div>
+      <div className="mt-2 truncate text-sm leading-6 text-[var(--text-primary)]">{value}</div>
+    </div>
+  );
+}
+
+function basename(path: string) {
+  const normalized = path.replace(/[\\/]+$/, "");
+  if (!normalized) return "";
+  const parts = normalized.split(/[\\/]/).filter(Boolean);
+  return parts.at(-1) || normalized;
 }
 
 function formatStatusLabel(status: Task["status"]) {
@@ -677,12 +564,6 @@ function formatStatusLabel(status: Task["status"]) {
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/_/g, " ")
     .replace(/^./, (char) => char.toUpperCase());
-}
-
-function basename(path: string) {
-  const normalized = path.replace(/[\\/]+$/, "");
-  const parts = normalized.split(/[\\/]/).filter(Boolean);
-  return parts.at(-1) || normalized || "Workspace";
 }
 
 function parseTaskTimestamp(input: string) {
@@ -698,35 +579,12 @@ function parseTaskTimestamp(input: string) {
 function formatTimestamp(input: string) {
   try {
     return new Date(parseTaskTimestamp(input)).toLocaleString([], {
-      hour: "2-digit",
-      minute: "2-digit",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch {
     return input;
   }
 }
-
-const toneStyles = {
-  default: {
-    wrapper: "border-white/[0.06] bg-[#0a0f18]",
-    eyebrow: "text-[#6f7889]",
-  },
-  blue: {
-    wrapper: "border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)]",
-    eyebrow: "text-[#9bc0ff]",
-  },
-  amber: {
-    wrapper: "border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)]",
-    eyebrow: "text-[#f0b35f]",
-  },
-  rose: {
-    wrapper: "border-[rgba(240,125,151,0.18)] bg-[rgba(240,125,151,0.08)]",
-    eyebrow: "text-[#f07d97]",
-  },
-  emerald: {
-    wrapper: "border-[rgba(77,137,255,0.16)] bg-[rgba(77,137,255,0.08)]",
-    eyebrow: "text-[#9bc0ff]",
-  },
-} as const;

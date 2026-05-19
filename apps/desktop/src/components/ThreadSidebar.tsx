@@ -1,344 +1,318 @@
-import { useMemo, useState } from "react";
-import { FolderOpen, Plus, Search, Settings } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import {
+  FolderOpen,
+  FolderTree,
+  GitBranch,
+  Plus,
+  Search,
+  Settings,
+  Sparkles,
+  TerminalSquare,
+} from "lucide-react";
 import type { Task, WorkspaceContext } from "../lib/codraTaskApi";
 
 interface ThreadSidebarProps {
   tasks: Task[];
   selectedTaskId: string | null;
+  currentWorkspace: string;
+  workspaceContext: WorkspaceContext | null;
+  className?: string;
+  taskModelLabels?: Record<string, string>;
   onSelectTask: (task: Task) => void;
   onNewThread: () => void;
   onOpenWorkspace: () => void;
-  currentWorkspace?: string;
-  workspaceContext?: WorkspaceContext | null;
-  className?: string;
 }
+
+type SidebarTab = "threads" | "workspace";
 
 export function ThreadSidebar({
   tasks,
   selectedTaskId,
-  onSelectTask,
-  onNewThread,
-  onOpenWorkspace,
   currentWorkspace,
   workspaceContext,
   className,
+  taskModelLabels = {},
+  onSelectTask,
+  onNewThread,
+  onOpenWorkspace,
 }: ThreadSidebarProps) {
+  const [activeTab, setActiveTab] = useState<SidebarTab>("threads");
   const [search, setSearch] = useState("");
 
   const filteredTasks = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return tasks;
+    const normalized = search.trim().toLowerCase();
+    if (!normalized) {
+      return tasks;
+    }
 
     return tasks.filter((task) => {
-      return (
-        task.title.toLowerCase().includes(query) ||
-        task.userPrompt.toLowerCase().includes(query) ||
-        task.workspacePath.toLowerCase().includes(query)
-      );
+      const modelLabel = taskModelLabels[task.id] ?? "";
+      return [task.title, task.userPrompt, task.workspacePath, task.status, modelLabel]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized);
     });
-  }, [search, tasks]);
+  }, [search, taskModelLabels, tasks]);
 
-  const recentCount = filteredTasks.length;
+  const groupedTasks = useMemo(() => {
+    const groups = new Map<string, Task[]>();
+
+    for (const task of filteredTasks) {
+      const workspace = basename(task.workspacePath) || "Workspace";
+      const current = groups.get(workspace) ?? [];
+      current.push(task);
+      groups.set(workspace, current);
+    }
+
+    return Array.from(groups.entries()).sort((left, right) => left[0].localeCompare(right[0]));
+  }, [filteredTasks]);
+
+  const workspaceName = basename(currentWorkspace) || "No workspace selected";
 
   return (
     <aside
       className={[
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(11,15,24,0.96),rgba(7,10,16,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.52)] backdrop-blur-[18px]",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+        "flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-[color:var(--border)] bg-[var(--panel-overlay)] shadow-[0_24px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl",
+        className ?? "",
+      ].join(" ")}
     >
-      <div className="border-b border-white/[0.06] px-4 py-4 sm:px-4 sm:py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[rgba(155,192,255,0.24)] bg-[linear-gradient(180deg,rgba(77,137,255,0.34),rgba(77,137,255,0.08))] shadow-[0_0_0_1px_rgba(77,137,255,0.08),0_0_24px_rgba(77,137,255,0.18)]">
-            <div className="flex h-5 w-5 items-center justify-center rounded-lg border border-white/[0.88]">
-              <div className="flex h-3.5 w-3 items-stretch justify-between gap-0.5">
-                <span className="block w-0.5 rounded-full bg-[#9bc0ff]" />
-                <span className="block w-0.5 rounded-full bg-white/80" />
-                <span className="block w-0.5 rounded-full bg-[#4d89ff]" />
-              </div>
-            </div>
-          </div>
-
-          <div className="min-w-0">
-            <div className="text-[16px] font-semibold tracking-[-0.03em] text-white">
+      <div className="border-b border-[color:var(--border)] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">
               Codra
             </div>
-            <div className="mt-0.5 text-xs text-[#96a0b4]">
-              Local-first agent
-            </div>
+            <h2 className="mt-2 text-lg font-semibold tracking-tight text-[var(--text-primary)]">
+              Open-source agentic coding app for TeraAI.
+            </h2>
           </div>
-        </div>
-
-        <div className="mt-4 grid gap-2">
           <button
+            type="button"
             onClick={onNewThread}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-[rgba(255,255,255,0.03)] px-4 text-sm font-medium text-white transition hover:border-[rgba(155,192,255,0.18)] hover:bg-[rgba(255,255,255,0.05)]"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
+            title="New thread"
           >
             <Plus className="h-4 w-4" />
-            New thread
           </button>
+        </div>
 
-          <label className="flex h-11 items-center gap-2 rounded-2xl border border-white/[0.08] bg-[#070b12] px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <Search className="h-4 w-4 shrink-0 text-[#6f7889]" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search threads, workspaces…"
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-[#6f7889]"
+        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-1">
+          <TabButton active={activeTab === "threads"} onClick={() => setActiveTab("threads")}>
+            Threads
+          </TabButton>
+          <TabButton active={activeTab === "workspace"} onClick={() => setActiveTab("workspace")}>
+            Workspace
+          </TabButton>
+        </div>
+
+        <button
+          type="button"
+          onClick={onNewThread}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+        >
+          <Plus className="h-4 w-4" />
+          New thread
+        </button>
+
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2.5">
+          <Search className="h-4 w-4 text-[var(--text-muted)]" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={activeTab === "threads" ? "Search threads" : "Search workspace context"}
+            className="w-full bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+          />
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        {activeTab === "threads" ? (
+          groupedTasks.length > 0 ? (
+            <div className="space-y-4">
+              {groupedTasks.map(([workspace, workspaceTasks]) => (
+                <section key={workspace} className="space-y-2">
+                  <div className="flex items-center gap-2 px-2 text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                    <FolderTree className="h-3.5 w-3.5" />
+                    {workspace}
+                  </div>
+
+                  <div className="space-y-2">
+                    {workspaceTasks.map((task) => {
+                      const selected = task.id === selectedTaskId;
+                      const modelLabel = taskModelLabels[task.id];
+                      return (
+                        <button
+                          key={task.id}
+                          type="button"
+                          onClick={() => onSelectTask(task)}
+                          className={[
+                            "w-full rounded-[22px] border px-3 py-3 text-left transition",
+                            selected
+                              ? "border-[color:var(--accent)] bg-[var(--accent-soft)]"
+                              : "border-[color:var(--border)] bg-[var(--panel-muted)] hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-medium text-[var(--text-primary)]">
+                                {task.title || "Untitled thread"}
+                              </div>
+                              <div className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--text-muted)]">
+                                {task.userPrompt}
+                              </div>
+                            </div>
+                            <span className="rounded-full border border-[color:var(--border)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">
+                              {formatStatusLabel(task.status)}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                            <span className="inline-flex items-center gap-1">
+                              <FolderOpen className="h-3.5 w-3.5" />
+                              {basename(task.workspacePath) || workspace}
+                            </span>
+                            {modelLabel ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border)] px-2 py-0.5">
+                                <Sparkles className="h-3 w-3" />
+                                {modelLabel}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No threads yet"
+              description="Pick a model. Open a project. Prompt. Review. Ship. Your task threads will appear here."
             />
-          </label>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 scrollbar-hide sm:px-4">
-        <section className="section-space">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
-              Recent task threads
-            </div>
-            <span className="inline-flex items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]">
-              {recentCount} {recentCount === 1 ? "thread" : "threads"}
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            {filteredTasks.length === 0 ? (
-              <div className="rounded-[22px] border border-white/[0.06] bg-[#0a0f18] px-4 py-4 text-sm text-[#96a0b4]">
-                No threads yet.
+          )
+        ) : (
+          <div className="space-y-4">
+            <section className="rounded-[22px] border border-[color:var(--border)] bg-[var(--panel-muted)] p-4">
+              <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                Current project
               </div>
-            ) : (
-              filteredTasks.map((task) => (
-                <ThreadItem
-                  key={task.id}
-                  task={task}
-                  active={selectedTaskId === task.id}
-                  onClick={() => onSelectTask(task)}
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="section-space mt-5">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
-              Workspace
-            </div>
-            <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]">
-              Local-first
-            </span>
-          </div>
-
-          <button
-            onClick={onOpenWorkspace}
-            className="w-full rounded-[22px] border border-white/[0.06] bg-[#0a0f18] p-4 text-left transition hover:border-[rgba(155,192,255,0.18)] hover:bg-[rgba(255,255,255,0.04)]"
-          >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03] text-[#9bc0ff]">
+              <div className="mt-2 text-base font-medium text-[var(--text-primary)]">{workspaceName}</div>
+              <div className="mt-1 break-all text-sm text-[var(--text-muted)]">
+                {currentWorkspace || "Select a workspace to start coding."}
+              </div>
+              <button
+                type="button"
+                onClick={onOpenWorkspace}
+                className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-base)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
+              >
                 <FolderOpen className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-white">
-                  {currentWorkspace
-                    ? basename(currentWorkspace)
-                    : "Select workspace"}
-                </div>
-                <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
-                  {workspaceContext?.detectedStack.slice(0, 2).join(" · ") ||
-                    "Workspace path and scan summary"}
-                </div>
-              </div>
-            </div>
-          </button>
-        </section>
+                Open project
+              </button>
+            </section>
 
-        <section className="section-space mt-5">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
-              Memory
-            </div>
-            <span className="inline-flex items-center rounded-full border border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f0b35f]">
-              Relevant
-            </span>
-          </div>
+            <section className="rounded-[22px] border border-[color:var(--border)] bg-[var(--panel-muted)] p-4">
+              <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                Repository
+              </div>
+              <div className="mt-3 space-y-3 text-sm text-[var(--text-primary)]">
+                <MetaRow label="Git status" value={workspaceContext?.isGitRepo ? "Repository detected" : "No repo detected"} />
+                <MetaRow label="Branch" value={workspaceContext?.gitBranch || "—"} icon={<GitBranch className="h-3.5 w-3.5" />} />
+                <MetaRow label="Stack" value={workspaceContext?.detectedStack.join(" · ") || "Unknown"} />
+                <MetaRow label="Configs" value={workspaceContext?.detectedConfigFiles.slice(0, 3).join(" · ") || "None detected"} />
+              </div>
+            </section>
 
-          <div className="rounded-[22px] border border-white/[0.06] bg-[#0a0f18] p-4">
-            <div className="text-sm font-medium text-white">
-              Memory layer coming next.
-            </div>
-            <p className="mt-2 text-sm leading-6 text-[#96a0b4]">
-              Project facts, approval habits, and task-specific reminders will
-              surface here once persistence is wired in.
-            </p>
+            <section className="rounded-[22px] border border-[color:var(--border)] bg-[var(--panel-muted)] p-4">
+              <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+                Local flow
+              </div>
+              <div className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                Codra will show a plan before changing files. Use this workspace tab to keep project context visible while you review threads.
+              </div>
+            </section>
           </div>
-        </section>
+        )}
       </div>
 
-      <div className="border-t border-white/[0.06] px-4 py-4">
-        <div className="rounded-[22px] border border-white/[0.06] bg-[#0a0f18] p-4 text-xs text-[#96a0b4]">
-          <div className="flex items-center justify-between gap-3">
-            <span>Codra Core</span>
-            <strong className="inline-flex items-center gap-1.5 text-[#9bc0ff]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#4d89ff] shadow-[0_0_10px_rgba(77,137,255,0.8)]" />
-              Running
-            </strong>
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span>Daemon</span>
-            <strong className="inline-flex items-center gap-1.5 text-[#9bc0ff]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#4d89ff] shadow-[0_0_10px_rgba(77,137,255,0.8)]" />
-              Connected
-            </strong>
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span>Mode</span>
-            <strong className="text-white">Local-first mode</strong>
-          </div>
-
-          <div className="mt-3 border-t border-white/[0.05] pt-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-2 text-[#96a0b4]">
-                <Settings className="h-3.5 w-3.5" />
-                Settings
-              </span>
-              <strong className="text-white">Open</strong>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span>Audit</span>
-              <strong className="text-[#96a0b4]">Safe approvals</strong>
-            </div>
-          </div>
-        </div>
+      <div className="border-t border-[color:var(--border)] p-3">
+        <button
+          type="button"
+          className="flex w-full items-center gap-3 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-3 text-left text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
+        >
+          <Settings className="h-4 w-4 text-[var(--text-muted)]" />
+          <span className="flex-1">Settings</span>
+          <TerminalSquare className="h-4 w-4 text-[var(--text-muted)]" />
+        </button>
       </div>
     </aside>
   );
 }
 
-function ThreadItem({
-  task,
+function TabButton({
   active,
+  children,
   onClick,
 }: {
-  task: Task;
   active: boolean;
+  children: ReactNode;
   onClick: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={[
-        "w-full rounded-[22px] border px-4 py-3 text-left transition",
+        "flex-1 rounded-xl px-3 py-2 text-sm font-medium transition",
         active
-          ? "border-[rgba(155,192,255,0.28)] bg-[rgba(77,137,255,0.1)] shadow-[0_0_0_1px_rgba(77,137,255,0.08)_inset,0_16px_32px_rgba(0,0,0,0.18)]"
-          : "border-white/[0.06] bg-[#0a0f18] hover:border-[rgba(155,192,255,0.14)] hover:bg-[rgba(255,255,255,0.04)]",
+          ? "bg-[var(--panel-base)] text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
       ].join(" ")}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-white">
-            {task.title || task.userPrompt.slice(0, 48)}
-          </div>
-          <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
-            {task.userPrompt}
-          </div>
-        </div>
-        <StatusChip status={task.status} />
-      </div>
-
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-[#6f7889]">
-        <span className="truncate">{basename(task.workspacePath)}</span>
-        <span>·</span>
-        <span>{formatTime(task.updatedAt)}</span>
-      </div>
+      {children}
     </button>
   );
 }
 
-function StatusChip({ status }: { status: Task["status"] }) {
-  const { className, label } = statusChipInfo(status);
-  return <span className={className}>{label}</span>;
+function EmptyState({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-[color:var(--border)] bg-[var(--panel-muted)] px-4 py-10 text-center">
+      <div className="text-sm font-medium text-[var(--text-primary)]">{title}</div>
+      <div className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{description}</div>
+    </div>
+  );
 }
 
-function statusChipInfo(status: Task["status"]) {
-  switch (status) {
-    case "awaiting_approval":
-      return {
-        label: "Awaiting approval",
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
-      };
-    case "approved":
-      return {
-        label: "Approved",
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
-      };
-    case "planning":
-    case "executing":
-    case "verifying":
-    case "repair_planning":
-    case "repairing":
-      return {
-        label: formatStatusLabel(status),
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f0b35f]",
-      };
-    case "awaiting_repair_approval":
-      return {
-        label: "Repair approval",
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-[rgba(240,125,151,0.16)] bg-[rgba(240,125,151,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f07d97]",
-      };
-    case "completed":
-      return {
-        label: "Completed",
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-[rgba(77,137,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
-      };
-    case "cancelled":
-    case "failed":
-    case "draft":
-    default:
-      return {
-        label: formatStatusLabel(status),
-        className:
-          "inline-flex shrink-0 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]",
-      };
-  }
+function MetaRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon?: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-[color:var(--border)] bg-[var(--panel-base)] px-3 py-3">
+      <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--text-muted)]">{label}</div>
+      <div className="mt-2 flex items-center gap-2 text-sm text-[var(--text-primary)]">
+        {icon}
+        <span className="truncate">{value}</span>
+      </div>
+    </div>
+  );
 }
 
 function basename(path: string) {
   const normalized = path.replace(/[\\/]+$/, "");
+  if (!normalized) return "";
   const parts = normalized.split(/[\\/]/).filter(Boolean);
-  return parts.at(-1) || normalized || "Workspace";
+  return parts.at(-1) || normalized;
 }
 
-function formatStatusLabel(status: Task["status"]) {
+function formatStatusLabel(status: string) {
   return status
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/_/g, " ")
     .replace(/^./, (char) => char.toUpperCase());
-}
-
-function parseTaskTimestamp(input: string) {
-  const unixSeconds = Number(input);
-  if (Number.isFinite(unixSeconds) && unixSeconds > 0) {
-    return unixSeconds * 1000;
-  }
-
-  const parsed = Date.parse(input);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function formatTime(input: string) {
-  try {
-    return new Date(parseTaskTimestamp(input)).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return input;
-  }
 }
