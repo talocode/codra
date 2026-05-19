@@ -1,22 +1,41 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, FolderOpen, Play } from 'lucide-react';
-import { createTask, getTaskEvents, listTasks, scanWorkspace } from './lib/codraTaskApi';
-import type { Task, TaskEvent, WorkspaceContext } from './lib/codraTaskApi';
-import { ThreadSidebar } from './components/ThreadSidebar';
-import { TaskThreadView } from './components/TaskThreadView';
-import { ModelPicker } from './components/ModelPicker';
-import { getModelLabel, loadModelConfig, type ModelConfig } from './lib/modelConfig';
-import { selectWorkspaceFolder } from './lib/workspacePicker';
-import { isTauriRuntime } from './lib/tauriRuntime';
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, FolderOpen, Play } from "lucide-react";
+import {
+  createTask,
+  getTaskEvents,
+  listTasks,
+  scanWorkspace,
+} from "./lib/codraTaskApi";
+import type { Task, TaskEvent, WorkspaceContext } from "./lib/codraTaskApi";
+import { ThreadSidebar } from "./components/ThreadSidebar";
+import { TaskThreadView } from "./components/TaskThreadView";
+import { ModelPicker } from "./components/ModelPicker";
+import {
+  getModelLabel,
+  loadModelConfig,
+  type ModelConfig,
+} from "./lib/modelConfig";
+import { selectWorkspaceFolder } from "./lib/workspacePicker";
+import { isTauriRuntime } from "./lib/tauriRuntime";
 
-const LAST_WORKSPACE_KEY = 'codra_last_workspace';
+const LAST_WORKSPACE_KEY = "codra_last_workspace";
 
 function sortTasks(tasks: Task[]) {
   return [...tasks].sort((a, b) => {
-    const aTime = new Date(a.updated_at).getTime();
-    const bTime = new Date(b.updated_at).getTime();
+    const aTime = parseTaskTimestamp(a.updated_at);
+    const bTime = parseTaskTimestamp(b.updated_at);
     return bTime - aTime;
   });
+}
+
+function parseTaskTimestamp(input: string) {
+  const unixSeconds = Number(input);
+  if (Number.isFinite(unixSeconds) && unixSeconds > 0) {
+    return unixSeconds * 1000;
+  }
+
+  const parsed = Date.parse(input);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function upsertTask(tasks: Task[], next: Task) {
@@ -24,17 +43,17 @@ function upsertTask(tasks: Task[], next: Task) {
 }
 
 function basename(path: string) {
-  const normalized = path.replace(/[\\/]+$/, '');
-  if (!normalized) return '';
+  const normalized = path.replace(/[\\/]+$/, "");
+  if (!normalized) return "";
   const parts = normalized.split(/[\\/]/).filter(Boolean);
   return parts.at(-1) || normalized;
 }
 
 function formatStatusLabel(status?: string | null) {
-  if (!status) return 'Local-first mode';
+  if (!status) return "Local-first mode";
   return status
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
     .replace(/^./, (char) => char.toUpperCase());
 }
 
@@ -42,10 +61,13 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [events, setEvents] = useState<TaskEvent[]>([]);
-  const [workspacePath, setWorkspacePath] = useState('');
-  const [workspaceContext, setWorkspaceContext] = useState<WorkspaceContext | null>(null);
-  const [modelConfig, setModelConfig] = useState<ModelConfig>(() => loadModelConfig());
-  const [prompt, setPrompt] = useState('');
+  const [workspacePath, setWorkspacePath] = useState("");
+  const [workspaceContext, setWorkspaceContext] =
+    useState<WorkspaceContext | null>(null);
+  const [modelConfig, setModelConfig] = useState<ModelConfig>(() =>
+    loadModelConfig(),
+  );
+  const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isScanningWorkspace, setIsScanningWorkspace] = useState(false);
@@ -57,25 +79,50 @@ export default function App() {
     return tasks.find((task) => task.id === selectedTaskId) || null;
   }, [tasks, selectedTaskId]);
 
-  const workspaceLabel = basename(workspacePath) || 'Select workspace';
-  const modelLabel = getModelLabel(modelConfig.selectedProvider, modelConfig.selectedModel);
+  const workspaceLabel = basename(workspacePath) || "Select workspace";
+  const modelLabel = getModelLabel(
+    modelConfig.selectedProvider,
+    modelConfig.selectedModel,
+  );
+
+  async function loadTasksForWorkspace(path: string) {
+    const nextPath = path.trim();
+    if (!nextPath) {
+      setTasks([]);
+      setSelectedTaskId(null);
+      setEvents([]);
+      return;
+    }
+
+    const nextTasks = sortTasks(await listTasks(nextPath));
+    setTasks(nextTasks);
+    setSelectedTaskId((current) =>
+      current && nextTasks.some((task) => task.id === current)
+        ? current
+        : (nextTasks[0]?.id ?? null),
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
+      const lastWorkspace = localStorage.getItem(LAST_WORKSPACE_KEY);
+
+      if (lastWorkspace && !cancelled) {
+        setWorkspacePath(lastWorkspace);
+      }
+
       try {
-        const list = await listTasks();
+        const list = lastWorkspace ? await listTasks(lastWorkspace) : [];
         if (!cancelled) {
           setTasks(sortTasks(list));
         }
       } catch (cause) {
-        console.error('[Codra] Failed to load tasks:', cause);
+        console.error("[Codra] Failed to load tasks:", cause);
       }
 
-      const lastWorkspace = localStorage.getItem(LAST_WORKSPACE_KEY);
       if (lastWorkspace && !cancelled) {
-        setWorkspacePath(lastWorkspace);
         if (isTauri) {
           void scanWorkspaceAtPath(lastWorkspace);
         }
@@ -100,13 +147,21 @@ export default function App() {
     let cancelled = false;
 
     async function loadEvents() {
+      const currentTask = tasks.find((task) => task.id === taskId);
+      if (!currentTask) {
+        if (!cancelled) {
+          setEvents([]);
+        }
+        return;
+      }
+
       try {
-        const next = await getTaskEvents(taskId);
+        const next = await getTaskEvents(taskId, currentTask.workspace_path);
         if (!cancelled) {
           setEvents(next);
         }
       } catch (cause) {
-        console.error('[Codra] Failed to load task events:', cause);
+        console.error("[Codra] Failed to load task events:", cause);
         if (!cancelled) {
           setEvents([]);
         }
@@ -118,7 +173,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [selectedTaskId]);
+  }, [selectedTaskId, tasks]);
 
   async function scanWorkspaceAtPath(path: string) {
     const nextPath = path.trim();
@@ -129,6 +184,7 @@ export default function App() {
 
     setIsScanningWorkspace(true);
     try {
+      await loadTasksForWorkspace(nextPath);
       const ctx = await scanWorkspace(nextPath);
       setWorkspaceContext(ctx);
       setError(null);
@@ -143,18 +199,28 @@ export default function App() {
   function handleNewThread() {
     setSelectedTaskId(null);
     setEvents([]);
-    setPrompt('');
+    setPrompt("");
     setError(null);
   }
 
   function handleSelectTask(task: Task) {
+    if (task.workspace_path !== workspacePath) {
+      setWorkspacePath(task.workspace_path);
+      localStorage.setItem(LAST_WORKSPACE_KEY, task.workspace_path);
+      if (isTauri) {
+        void scanWorkspaceAtPath(task.workspace_path);
+      }
+    }
+
     setSelectedTaskId(task.id);
     setError(null);
   }
 
   async function handleSelectWorkspace() {
     if (!isTauri) {
-      setError('Open Codra in the desktop app window to use the native folder picker.');
+      setError(
+        "Open Codra in the desktop app window to use the native folder picker.",
+      );
       return;
     }
 
@@ -175,17 +241,19 @@ export default function App() {
     const trimmedPrompt = prompt.trim();
 
     if (!trimmedWorkspace) {
-      setError('Workspace path is required.');
+      setError("Workspace path is required.");
       return;
     }
 
     if (!trimmedPrompt) {
-      setError('Prompt is required.');
+      setError("Prompt is required.");
       return;
     }
 
     if (!isTauri) {
-      setError('Tauri runtime unavailable. Open Codra in the desktop app window.');
+      setError(
+        "Tauri runtime unavailable. Open Codra in the desktop app window.",
+      );
       return;
     }
 
@@ -201,10 +269,13 @@ export default function App() {
 
       setTasks((current) => upsertTask(current, created));
       setSelectedTaskId(created.id);
-      setPrompt('');
+      setPrompt("");
 
       try {
-        const nextEvents = await getTaskEvents(created.id);
+        const nextEvents = await getTaskEvents(
+          created.id,
+          created.workspace_path,
+        );
         setEvents(nextEvents);
       } catch {
         setEvents([]);
@@ -228,14 +299,24 @@ export default function App() {
     }
 
     try {
-      const next = await getTaskEvents(selectedTaskId);
+      if (!selectedTask) {
+        setEvents([]);
+        return;
+      }
+
+      const next = await getTaskEvents(
+        selectedTaskId,
+        selectedTask.workspace_path,
+      );
       setEvents(next);
     } catch {
       setEvents([]);
     }
   }
 
-  const canCreateTask = Boolean(isTauri && workspacePath.trim() && prompt.trim() && !isCreatingTask);
+  const canCreateTask = Boolean(
+    isTauri && workspacePath.trim() && prompt.trim() && !isCreatingTask,
+  );
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#04060a] text-[#f4f7fb] selection:bg-white/15 selection:text-white">
@@ -256,10 +337,14 @@ export default function App() {
         <main className="order-1 flex min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(11,15,24,0.96),rgba(7,10,16,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.52)] backdrop-blur-[18px] lg:order-2">
           <header className="flex h-16 items-center justify-between gap-4 border-b border-white/[0.06] px-4 sm:px-6">
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Codra interface artifact</div>
+              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+                Codra interface artifact
+              </div>
               <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                 <h1 className="truncate text-base font-semibold tracking-tight text-white sm:text-lg">
-                  {selectedTask ? selectedTask.title || 'Task thread' : 'What should Codra do in this workspace?'}
+                  {selectedTask
+                    ? selectedTask.title || "Task thread"
+                    : "What should Codra do in this workspace?"}
                 </h1>
                 {selectedTask ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(155,192,255,0.18)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff] shadow-[0_0_0_1px_rgba(77,137,255,0.04)_inset]">
@@ -280,7 +365,9 @@ export default function App() {
               >
                 <FolderOpen className="h-4 w-4 text-[#9bc0ff]" />
                 <span className="hidden sm:inline">Workspace</span>
-                <span className="max-w-[10rem] truncate text-[#96a0b4]">{workspaceLabel}</span>
+                <span className="max-w-[10rem] truncate text-[#96a0b4]">
+                  {workspaceLabel}
+                </span>
               </button>
 
               <div className="hidden items-center gap-1.5 rounded-full border border-[rgba(155,192,255,0.14)] bg-[rgba(77,137,255,0.08)] px-3 py-1.5 text-xs text-[#9bc0ff] md:inline-flex">
@@ -294,7 +381,8 @@ export default function App() {
             <div className="flex items-start gap-2 border-b border-amber-500/30 bg-amber-950/20 px-4 py-2 text-xs text-amber-300 sm:px-6">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>
-                Tauri runtime unavailable — native folder selection and task execution are only available in the desktop app window.
+                Tauri runtime unavailable — native folder selection and task
+                execution are only available in the desktop app window.
               </span>
             </div>
           )}
@@ -304,12 +392,15 @@ export default function App() {
               <div className="flex h-full min-h-0 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
                 <div className="mx-auto flex w-full max-w-[760px] flex-col justify-center">
                   <div className="text-center">
-                    <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Codra interface artifact</div>
+                    <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+                      Codra interface artifact
+                    </div>
                     <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                       What should Codra do in this workspace?
                     </h2>
                     <p className="mx-auto mt-3 max-w-[42rem] text-sm leading-6 text-[#96a0b4] sm:text-[15px]">
-                      Codra scans the workspace, drafts a plan, and waits for your approval before it touches files.
+                      Codra scans the workspace, drafts a plan, and waits for
+                      your approval before it touches files.
                     </p>
                   </div>
 
@@ -325,7 +416,14 @@ export default function App() {
                           }}
                           onBlur={() => {
                             if (workspacePath.trim()) {
-                              localStorage.setItem(LAST_WORKSPACE_KEY, workspacePath.trim());
+                              const nextPath = workspacePath.trim();
+                              localStorage.setItem(
+                                LAST_WORKSPACE_KEY,
+                                nextPath,
+                              );
+                              if (isTauri) {
+                                void scanWorkspaceAtPath(nextPath);
+                              }
                             }
                           }}
                           placeholder="Select or type a workspace path"
@@ -337,14 +435,17 @@ export default function App() {
                         onClick={handleSelectWorkspace}
                         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[rgba(155,192,255,0.18)] bg-[linear-gradient(180deg,rgba(77,137,255,1),rgba(50,102,222,1))] px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(77,137,255,0.22),0_0_0_1px_rgba(255,255,255,0.05)_inset] transition hover:translate-y-[-1px] hover:shadow-[0_14px_36px_rgba(77,137,255,0.26),0_0_0_1px_rgba(255,255,255,0.05)_inset]"
                       >
-                        {isTauri ? 'Browse workspace' : 'Open in Tauri'}
+                        {isTauri ? "Browse workspace" : "Open in Tauri"}
                       </button>
                     </div>
 
                     {workspaceContext ? (
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#96a0b4]">
                         <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
-                          Stack: {workspaceContext.detected_stack.slice(0, 2).join(' · ') || 'Unknown'}
+                          Stack:{" "}
+                          {workspaceContext.detected_stack
+                            .slice(0, 2)
+                            .join(" · ") || "Unknown"}
                         </span>
                         {workspaceContext.git_branch && (
                           <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
@@ -352,13 +453,20 @@ export default function App() {
                           </span>
                         )}
                         <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
-                          {workspaceContext.is_git_repo ? 'Git repo' : 'Not a git repo'}
+                          {workspaceContext.is_git_repo
+                            ? "Git repo"
+                            : "Not a git repo"}
                         </span>
-                        {workspaceContext.detected_config_files.slice(0, 2).map((file) => (
-                          <span key={file} className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
-                            {file}
-                          </span>
-                        ))}
+                        {workspaceContext.detected_config_files
+                          .slice(0, 2)
+                          .map((file) => (
+                            <span
+                              key={file}
+                              className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1"
+                            >
+                              {file}
+                            </span>
+                          ))}
                       </div>
                     ) : null}
 
@@ -392,7 +500,7 @@ export default function App() {
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Play className="h-4 w-4" />
-                        {isCreatingTask ? 'Creating…' : 'Create Task'}
+                        {isCreatingTask ? "Creating…" : "Create Task"}
                       </button>
                     </div>
                   </div>

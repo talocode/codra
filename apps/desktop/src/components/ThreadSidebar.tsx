@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { FolderOpen, Plus, Search, Settings } from 'lucide-react';
-import type { Task, WorkspaceContext } from '../lib/codraTaskApi';
+import { useMemo, useState } from "react";
+import { FolderOpen, Plus, Search, Settings } from "lucide-react";
+import type { Task, WorkspaceContext } from "../lib/codraTaskApi";
 
 interface ThreadSidebarProps {
   tasks: Task[];
@@ -23,7 +23,7 @@ export function ThreadSidebar({
   workspaceContext,
   className,
 }: ThreadSidebarProps) {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const filteredTasks = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -43,11 +43,11 @@ export function ThreadSidebar({
   return (
     <aside
       className={[
-        'flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(11,15,24,0.96),rgba(7,10,16,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.52)] backdrop-blur-[18px]',
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(11,15,24,0.96),rgba(7,10,16,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.52)] backdrop-blur-[18px]",
         className,
       ]
         .filter(Boolean)
-        .join(' ')}
+        .join(" ")}
     >
       <div className="border-b border-white/[0.06] px-4 py-4 sm:px-4 sm:py-5">
         <div className="flex items-center gap-3">
@@ -62,8 +62,12 @@ export function ThreadSidebar({
           </div>
 
           <div className="min-w-0">
-            <div className="text-[16px] font-semibold tracking-[-0.03em] text-white">Codra</div>
-            <div className="mt-0.5 text-xs text-[#96a0b4]">Local-first agent</div>
+            <div className="text-[16px] font-semibold tracking-[-0.03em] text-white">
+              Codra
+            </div>
+            <div className="mt-0.5 text-xs text-[#96a0b4]">
+              Local-first agent
+            </div>
           </div>
         </div>
 
@@ -91,9 +95,11 @@ export function ThreadSidebar({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 scrollbar-hide sm:px-4">
         <section className="section-space">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Recent task threads</div>
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+              Recent task threads
+            </div>
             <span className="inline-flex items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]">
-              {recentCount} {recentCount === 1 ? 'thread' : 'threads'}
+              {recentCount} {recentCount === 1 ? "thread" : "threads"}
             </span>
           </div>
 
@@ -117,7 +123,9 @@ export function ThreadSidebar({
 
         <section className="section-space mt-5">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Workspace</div>
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+              Workspace
+            </div>
             <span className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]">
               Local-first
             </span>
@@ -133,10 +141,13 @@ export function ThreadSidebar({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-white">
-                  {currentWorkspace ? basename(currentWorkspace) : 'Select workspace'}
+                  {currentWorkspace
+                    ? basename(currentWorkspace)
+                    : "Select workspace"}
                 </div>
                 <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
-                  {workspaceContext?.detected_stack.slice(0, 2).join(' · ') || 'Workspace path and scan summary'}
+                  {workspaceContext?.detected_stack.slice(0, 2).join(" · ") ||
+                    "Workspace path and scan summary"}
                 </div>
               </div>
             </div>
@@ -145,16 +156,21 @@ export function ThreadSidebar({
 
         <section className="section-space mt-5">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">Memory</div>
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
+              Memory
+            </div>
             <span className="inline-flex items-center rounded-full border border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f0b35f]">
               Relevant
             </span>
           </div>
 
           <div className="rounded-[22px] border border-white/[0.06] bg-[#0a0f18] p-4">
-            <div className="text-sm font-medium text-white">Memory layer coming next.</div>
+            <div className="text-sm font-medium text-white">
+              Memory layer coming next.
+            </div>
             <p className="mt-2 text-sm leading-6 text-[#96a0b4]">
-              Project facts, approval habits, and task-specific reminders will surface here once persistence is wired in.
+              Project facts, approval habits, and task-specific reminders will
+              surface here once persistence is wired in.
             </p>
           </div>
         </section>
@@ -213,16 +229,20 @@ function ThreadItem({
     <button
       onClick={onClick}
       className={[
-        'w-full rounded-[22px] border px-4 py-3 text-left transition',
+        "w-full rounded-[22px] border px-4 py-3 text-left transition",
         active
-          ? 'border-[rgba(155,192,255,0.28)] bg-[rgba(77,137,255,0.1)] shadow-[0_0_0_1px_rgba(77,137,255,0.08)_inset,0_16px_32px_rgba(0,0,0,0.18)]'
-          : 'border-white/[0.06] bg-[#0a0f18] hover:border-[rgba(155,192,255,0.14)] hover:bg-[rgba(255,255,255,0.04)]',
-      ].join(' ')}
+          ? "border-[rgba(155,192,255,0.28)] bg-[rgba(77,137,255,0.1)] shadow-[0_0_0_1px_rgba(77,137,255,0.08)_inset,0_16px_32px_rgba(0,0,0,0.18)]"
+          : "border-white/[0.06] bg-[#0a0f18] hover:border-[rgba(155,192,255,0.14)] hover:bg-[rgba(255,255,255,0.04)]",
+      ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-white">{task.title || task.user_prompt.slice(0, 48)}</div>
-          <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">{task.user_prompt}</div>
+          <div className="truncate text-sm font-medium text-white">
+            {task.title || task.user_prompt.slice(0, 48)}
+          </div>
+          <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
+            {task.user_prompt}
+          </div>
         </div>
         <StatusChip status={task.status} />
       </div>
@@ -236,75 +256,88 @@ function ThreadItem({
   );
 }
 
-function StatusChip({ status }: { status: Task['status'] }) {
+function StatusChip({ status }: { status: Task["status"] }) {
   const { className, label } = statusChipInfo(status);
   return <span className={className}>{label}</span>;
 }
 
-function statusChipInfo(status: Task['status']) {
+function statusChipInfo(status: Task["status"]) {
   switch (status) {
-    case 'AwaitingApproval':
+    case "awaiting_approval":
       return {
-        label: 'Awaiting approval',
+        label: "Awaiting approval",
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]',
+          "inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
       };
-    case 'Approved':
+    case "approved":
       return {
-        label: 'Approved',
+        label: "Approved",
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]',
+          "inline-flex shrink-0 items-center rounded-full border border-[rgba(155,192,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
       };
-    case 'Planning':
-    case 'Executing':
-    case 'Verifying':
-    case 'RepairPlanning':
-    case 'Repairing':
+    case "planning":
+    case "executing":
+    case "verifying":
+    case "repair_planning":
+    case "repairing":
       return {
         label: formatStatusLabel(status),
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f0b35f]',
+          "inline-flex shrink-0 items-center rounded-full border border-[rgba(240,179,95,0.16)] bg-[rgba(240,179,95,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f0b35f]",
       };
-    case 'AwaitingRepairApproval':
+    case "awaiting_repair_approval":
       return {
-        label: 'Repair approval',
+        label: "Repair approval",
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-[rgba(240,125,151,0.16)] bg-[rgba(240,125,151,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f07d97]',
+          "inline-flex shrink-0 items-center rounded-full border border-[rgba(240,125,151,0.16)] bg-[rgba(240,125,151,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#f07d97]",
       };
-    case 'Completed':
+    case "completed":
       return {
-        label: 'Completed',
+        label: "Completed",
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-[rgba(77,137,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]',
+          "inline-flex shrink-0 items-center rounded-full border border-[rgba(77,137,255,0.16)] bg-[rgba(77,137,255,0.08)] px-2.5 py-1 text-[10px] font-medium text-[#9bc0ff]",
       };
-    case 'Cancelled':
-    case 'Failed':
-    case 'Draft':
+    case "cancelled":
+    case "failed":
+    case "draft":
     default:
       return {
         label: formatStatusLabel(status),
         className:
-          'inline-flex shrink-0 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]',
+          "inline-flex shrink-0 items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-[#96a0b4]",
       };
   }
 }
 
 function basename(path: string) {
-  const normalized = path.replace(/[\\/]+$/, '');
+  const normalized = path.replace(/[\\/]+$/, "");
   const parts = normalized.split(/[\\/]/).filter(Boolean);
-  return parts.at(-1) || normalized || 'Workspace';
+  return parts.at(-1) || normalized || "Workspace";
 }
 
-function formatStatusLabel(status: Task['status']) {
+function formatStatusLabel(status: Task["status"]) {
   return status
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
     .replace(/^./, (char) => char.toUpperCase());
+}
+
+function parseTaskTimestamp(input: string) {
+  const unixSeconds = Number(input);
+  if (Number.isFinite(unixSeconds) && unixSeconds > 0) {
+    return unixSeconds * 1000;
+  }
+
+  const parsed = Date.parse(input);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function formatTime(input: string) {
   try {
-    return new Date(input).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(parseTaskTimestamp(input)).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return input;
   }
