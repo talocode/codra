@@ -32,8 +32,8 @@ export function ThreadSidebar({
     return tasks.filter((task) => {
       return (
         task.title.toLowerCase().includes(query) ||
-        task.user_prompt.toLowerCase().includes(query) ||
-        task.workspace_path.toLowerCase().includes(query)
+        task.userPrompt.toLowerCase().includes(query) ||
+        task.workspacePath.toLowerCase().includes(query)
       );
     });
   }, [search, tasks]);
@@ -146,7 +146,7 @@ export function ThreadSidebar({
                     : "Select workspace"}
                 </div>
                 <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
-                  {workspaceContext?.detected_stack.slice(0, 2).join(" · ") ||
+                  {workspaceContext?.detectedStack.slice(0, 2).join(" · ") ||
                     "Workspace path and scan summary"}
                 </div>
               </div>
@@ -238,19 +238,19 @@ function ThreadItem({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-white">
-            {task.title || task.user_prompt.slice(0, 48)}
+            {task.title || task.userPrompt.slice(0, 48)}
           </div>
           <div className="mt-1 truncate text-xs leading-5 text-[#96a0b4]">
-            {task.user_prompt}
+            {task.userPrompt}
           </div>
         </div>
         <StatusChip status={task.status} />
       </div>
 
       <div className="mt-3 flex items-center gap-2 text-[10px] text-[#6f7889]">
-        <span className="truncate">{basename(task.workspace_path)}</span>
+        <span className="truncate">{basename(task.workspacePath)}</span>
         <span>·</span>
-        <span>{formatTime(task.updated_at)}</span>
+        <span>{formatTime(task.updatedAt)}</span>
       </div>
     </button>
   );

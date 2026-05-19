@@ -22,16 +22,16 @@ export interface TaskStep {
 export interface TaskPlan {
   summary: string;
   steps: TaskStep[];
-  files_to_read: string[];
-  files_to_modify: string[];
-  commands_to_run: string[];
-  risk_level: string;
-  requires_approval: boolean;
+  filesToRead: string[];
+  filesToModify: string[];
+  commandsToRun: string[];
+  riskLevel: string;
+  requiresApproval: boolean;
 }
 
 export interface FileChange {
   path: string;
-  change_type: string;
+  changeType: string;
   approved: boolean;
   applied: boolean;
 }
@@ -40,9 +40,9 @@ export interface CommandRun {
   command: string;
   cwd: string;
   status: string;
-  exit_code?: number;
-  stdout_preview?: string;
-  stderr_preview?: string;
+  exitCode?: number;
+  stdoutPreview?: string;
+  stderrPreview?: string;
 }
 
 export interface VerificationResult {
@@ -53,16 +53,16 @@ export interface VerificationResult {
 
 export interface TaskEvent {
   id: string;
-  task_id: string;
+  taskId: string;
   timestamp: string;
-  event_type: string;
+  eventType: string;
   message: string;
 }
 
 export interface DetectedCommand {
   command: string;
   reason: string;
-  risk_level: string;
+  riskLevel: string;
   allowed: boolean;
 }
 
@@ -75,33 +75,33 @@ export interface WorkspaceFileNode {
 }
 
 export interface WorkspaceContext {
-  workspace_path: string;
-  is_git_repo: boolean;
-  git_branch?: string;
-  git_status_summary?: string;
-  detected_stack: string[];
-  detected_package_managers: string[];
-  detected_config_files: string[];
-  suggested_commands: DetectedCommand[];
-  file_tree: WorkspaceFileNode[];
-  ignored_dirs: string[];
-  scanned_at: string;
+  workspacePath: string;
+  isGitRepo: boolean;
+  gitBranch?: string;
+  gitStatusSummary?: string;
+  detectedStack: string[];
+  detectedPackageManagers: string[];
+  detectedConfigFiles: string[];
+  suggestedCommands: DetectedCommand[];
+  fileTree: WorkspaceFileNode[];
+  ignoredDirs: string[];
+  scannedAt: string;
 }
 
 export interface Task {
   id: string;
   title: string;
-  user_prompt: string;
-  workspace_path: string;
+  userPrompt: string;
+  workspacePath: string;
   status: TaskStatus;
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
   plan?: TaskPlan;
-  repair_plan?: TaskPlan;
-  changed_files: FileChange[];
-  commands_run: CommandRun[];
-  verification_result?: VerificationResult;
-  final_report?: string;
+  repairPlan?: TaskPlan;
+  changedFiles: FileChange[];
+  commandsRun: CommandRun[];
+  verificationResult?: VerificationResult;
+  finalReport?: string;
   error?: string;
 }

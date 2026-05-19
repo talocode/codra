@@ -83,7 +83,7 @@ export function TaskLoopView() {
     try {
       const updated = await approveTask(
         selectedTask.id,
-        selectedTask.workspace_path,
+        selectedTask.workspacePath,
       );
       setSelectedTask(updated);
     } catch (e: any) {
@@ -99,7 +99,7 @@ export function TaskLoopView() {
     try {
       const updated = await cancelTask(
         selectedTask.id,
-        selectedTask.workspace_path,
+        selectedTask.workspacePath,
         "User cancelled",
       );
       setSelectedTask(updated);
@@ -116,7 +116,7 @@ export function TaskLoopView() {
     try {
       const updated = await executeTask(
         selectedTask.id,
-        selectedTask.workspace_path,
+        selectedTask.workspacePath,
       );
       setSelectedTask(updated);
     } catch (e: any) {
@@ -132,7 +132,7 @@ export function TaskLoopView() {
     try {
       const updated = await approveRepair(
         selectedTask.id,
-        selectedTask.workspace_path,
+        selectedTask.workspacePath,
       );
       setSelectedTask(updated);
     } catch (e: any) {
@@ -191,7 +191,7 @@ export function TaskLoopView() {
               onClick={() => selectTask(t)}
               className={`cursor-pointer rounded p-3 mb-1 text-sm ${selectedTask?.id === t.id ? "bg-violet-600/20" : "bg-white/[0.03]"}`}
             >
-              {t.title || t.user_prompt.slice(0, 60)} — {t.status}
+              {t.title || t.userPrompt.slice(0, 60)} — {t.status}
             </div>
           ))}
         </div>

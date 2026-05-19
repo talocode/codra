@@ -22,8 +22,8 @@ const LAST_WORKSPACE_KEY = "codra_last_workspace";
 
 function sortTasks(tasks: Task[]) {
   return [...tasks].sort((a, b) => {
-    const aTime = parseTaskTimestamp(a.updated_at);
-    const bTime = parseTaskTimestamp(b.updated_at);
+    const aTime = parseTaskTimestamp(a.updatedAt);
+    const bTime = parseTaskTimestamp(b.updatedAt);
     return bTime - aTime;
   });
 }
@@ -156,7 +156,7 @@ export default function App() {
       }
 
       try {
-        const next = await getTaskEvents(taskId, currentTask.workspace_path);
+        const next = await getTaskEvents(taskId, currentTask.workspacePath);
         if (!cancelled) {
           setEvents(next);
         }
@@ -204,11 +204,11 @@ export default function App() {
   }
 
   function handleSelectTask(task: Task) {
-    if (task.workspace_path !== workspacePath) {
-      setWorkspacePath(task.workspace_path);
-      localStorage.setItem(LAST_WORKSPACE_KEY, task.workspace_path);
+    if (task.workspacePath !== workspacePath) {
+      setWorkspacePath(task.workspacePath);
+      localStorage.setItem(LAST_WORKSPACE_KEY, task.workspacePath);
       if (isTauri) {
-        void scanWorkspaceAtPath(task.workspace_path);
+        void scanWorkspaceAtPath(task.workspacePath);
       }
     }
 
@@ -274,7 +274,7 @@ export default function App() {
       try {
         const nextEvents = await getTaskEvents(
           created.id,
-          created.workspace_path,
+          created.workspacePath,
         );
         setEvents(nextEvents);
       } catch {
@@ -306,7 +306,7 @@ export default function App() {
 
       const next = await getTaskEvents(
         selectedTaskId,
-        selectedTask.workspace_path,
+        selectedTask.workspacePath,
       );
       setEvents(next);
     } catch {
@@ -443,21 +443,21 @@ export default function App() {
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#96a0b4]">
                         <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
                           Stack:{" "}
-                          {workspaceContext.detected_stack
+                          {workspaceContext.detectedStack
                             .slice(0, 2)
                             .join(" · ") || "Unknown"}
                         </span>
-                        {workspaceContext.git_branch && (
+                        {workspaceContext.gitBranch && (
                           <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
-                            Branch: {workspaceContext.git_branch}
+                            Branch: {workspaceContext.gitBranch}
                           </span>
                         )}
                         <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1">
-                          {workspaceContext.is_git_repo
+                          {workspaceContext.isGitRepo
                             ? "Git repo"
                             : "Not a git repo"}
                         </span>
-                        {workspaceContext.detected_config_files
+                        {workspaceContext.detectedConfigFiles
                           .slice(0, 2)
                           .map((file) => (
                             <span

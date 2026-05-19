@@ -15,7 +15,7 @@ const DOMAIN_CONFIGS = [
   {
     label: "task-loop",
     tsPath: path.join(repoRoot, "packages/shared/task-loop.ts"),
-    fieldNameStyle: RAW,
+    fieldNameStyle: CAMEL,
     unions: ["TaskStatus"],
     interfaces: [
       "Task",

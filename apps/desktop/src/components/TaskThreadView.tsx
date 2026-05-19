@@ -50,11 +50,11 @@ export function TaskThreadView({
 
   const status = task.status;
   const workspaceLabel =
-    workspaceContext?.workspace_path || workspacePath || task.workspace_path;
+    workspaceContext?.workspacePath || workspacePath || task.workspacePath;
   const currentWorkspaceName = basename(workspaceLabel);
   const statusLabel = formatStatusLabel(status);
   const canRun = status === "approved";
-  const hasRepairPlan = Boolean(task.repair_plan);
+  const hasRepairPlan = Boolean(task.repairPlan);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -78,7 +78,7 @@ export function TaskThreadView({
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#96a0b4]">
               <span>{currentWorkspaceName}</span>
               <span>·</span>
-              <span className="truncate">{task.workspace_path}</span>
+              <span className="truncate">{task.workspacePath}</span>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export function TaskThreadView({
         <div className="space-y-4 sm:space-y-5">
           <StreamCard eyebrow="You" title="Prompt" tone="default">
             <p className="whitespace-pre-wrap text-[15px] leading-7 text-white">
-              {task.user_prompt}
+              {task.userPrompt}
             </p>
           </StreamCard>
 
@@ -112,41 +112,39 @@ export function TaskThreadView({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow
                     label="Workspace"
-                    value={workspaceContext.workspace_path}
+                    value={workspaceContext.workspacePath}
                   />
                   <InfoRow
                     label="Repository"
                     value={
-                      workspaceContext.is_git_repo
-                        ? "Git repo"
-                        : "Not a git repo"
+                      workspaceContext.isGitRepo ? "Git repo" : "Not a git repo"
                     }
                   />
                   <InfoRow
                     label="Branch"
-                    value={workspaceContext.git_branch || "—"}
+                    value={workspaceContext.gitBranch || "—"}
                   />
                   <InfoRow
                     label="Stack"
                     value={
-                      workspaceContext.detected_stack.join(" · ") || "Unknown"
+                      workspaceContext.detectedStack.join(" · ") || "Unknown"
                     }
                   />
                 </div>
 
-                {workspaceContext.git_status_summary && (
+                {workspaceContext.gitStatusSummary && (
                   <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3 text-sm text-[#96a0b4]">
-                    {workspaceContext.git_status_summary}
+                    {workspaceContext.gitStatusSummary}
                   </div>
                 )}
 
-                {workspaceContext.detected_config_files.length > 0 && (
+                {workspaceContext.detectedConfigFiles.length > 0 && (
                   <div>
                     <div className="mb-2 text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
                       Config files
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {workspaceContext.detected_config_files
+                      {workspaceContext.detectedConfigFiles
                         .slice(0, 6)
                         .map((file) => (
                           <span
@@ -160,13 +158,13 @@ export function TaskThreadView({
                   </div>
                 )}
 
-                {workspaceContext.suggested_commands.length > 0 && (
+                {workspaceContext.suggestedCommands.length > 0 && (
                   <div>
                     <div className="mb-2 text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
                       Suggested commands
                     </div>
                     <div className="space-y-2">
-                      {workspaceContext.suggested_commands
+                      {workspaceContext.suggestedCommands
                         .slice(0, 3)
                         .map((command) => (
                           <div
@@ -178,7 +176,7 @@ export function TaskThreadView({
                                 $ {command.command}
                               </div>
                               <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] uppercase tracking-[0.24em] text-[#96a0b4]">
-                                {command.risk_level}
+                                {command.riskLevel}
                               </span>
                             </div>
                             <div className="mt-2 text-sm leading-6 text-[#96a0b4]">
@@ -215,10 +213,10 @@ export function TaskThreadView({
               <div className="space-y-4 text-sm text-[#d7deea]">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-[#96a0b4]">
                   <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
-                    Risk: {task.plan.risk_level}
+                    Risk: {task.plan.riskLevel}
                   </span>
                   <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
-                    {task.plan.requires_approval
+                    {task.plan.requiresApproval
                       ? "Approval required"
                       : "Auto-approve"}
                   </span>
@@ -254,15 +252,15 @@ export function TaskThreadView({
                 <div className="grid gap-3 sm:grid-cols-3">
                   <InfoRow
                     label="Read"
-                    value={task.plan.files_to_read.join(", ") || "—"}
+                    value={task.plan.filesToRead.join(", ") || "—"}
                   />
                   <InfoRow
                     label="Modify"
-                    value={task.plan.files_to_modify.join(", ") || "—"}
+                    value={task.plan.filesToModify.join(", ") || "—"}
                   />
                   <InfoRow
                     label="Commands"
-                    value={task.plan.commands_to_run.join(" · ") || "—"}
+                    value={task.plan.commandsToRun.join(" · ") || "—"}
                   />
                 </div>
               </div>
@@ -286,15 +284,15 @@ export function TaskThreadView({
                     </span>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap leading-7 text-white">
-                    {task.repair_plan?.summary ||
+                    {task.repairPlan?.summary ||
                       task.error ||
                       "Codra will summarize the repair path here if the execution pass needs follow-up."}
                   </p>
                 </div>
 
-                {task.repair_plan?.steps?.length ? (
+                {task.repairPlan?.steps?.length ? (
                   <div className="space-y-2">
-                    {task.repair_plan.steps.map((step, index) => (
+                    {task.repairPlan.steps.map((step, index) => (
                       <div
                         key={step.id}
                         className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
@@ -334,7 +332,7 @@ export function TaskThreadView({
                   <button
                     onClick={() =>
                       runMutation(() =>
-                        approveTask(task.id, task.workspace_path),
+                        approveTask(task.id, task.workspacePath),
                       )
                     }
                     disabled={loading}
@@ -348,7 +346,7 @@ export function TaskThreadView({
                       runMutation(() =>
                         cancelTask(
                           task.id,
-                          task.workspace_path,
+                          task.workspacePath,
                           "User cancelled",
                         ),
                       )
@@ -371,7 +369,7 @@ export function TaskThreadView({
                   <button
                     onClick={() =>
                       runMutation(() =>
-                        executeTask(task.id, task.workspace_path),
+                        executeTask(task.id, task.workspacePath),
                       )
                     }
                     disabled={loading || !canRun}
@@ -385,7 +383,7 @@ export function TaskThreadView({
                       runMutation(() =>
                         cancelTask(
                           task.id,
-                          task.workspace_path,
+                          task.workspacePath,
                           "User cancelled",
                         ),
                       )
@@ -422,7 +420,7 @@ export function TaskThreadView({
                   <button
                     onClick={() =>
                       runMutation(() =>
-                        approveRepair(task.id, task.workspace_path),
+                        approveRepair(task.id, task.workspacePath),
                       )
                     }
                     disabled={loading}
@@ -436,7 +434,7 @@ export function TaskThreadView({
                       runMutation(() =>
                         cancelTask(
                           task.id,
-                          task.workspace_path,
+                          task.workspacePath,
                           "User cancelled",
                         ),
                       )
@@ -467,8 +465,8 @@ export function TaskThreadView({
 
           <StreamCard eyebrow="Execution" title="Command trace" tone="default">
             <div className="space-y-3 text-sm text-[#d7deea]">
-              {task.commands_run.length > 0 ? (
-                task.commands_run.map((commandRun, index) => (
+              {task.commandsRun.length > 0 ? (
+                task.commandsRun.map((commandRun, index) => (
                   <div
                     key={`${commandRun.command}-${index}`}
                     className="rounded-2xl border border-white/[0.06] bg-black/25 p-4"
@@ -492,22 +490,21 @@ export function TaskThreadView({
                       <InfoRow label="cwd" value={commandRun.cwd} />
                       <InfoRow
                         label="exit"
-                        value={commandRun.exit_code?.toString() ?? "—"}
+                        value={commandRun.exitCode?.toString() ?? "—"}
                       />
                       <InfoRow label="status" value={commandRun.status} />
                     </div>
 
-                    {(commandRun.stdout_preview ||
-                      commandRun.stderr_preview) && (
+                    {(commandRun.stdoutPreview || commandRun.stderrPreview) && (
                       <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                        {commandRun.stdout_preview && (
+                        {commandRun.stdoutPreview && (
                           <pre className="max-h-40 overflow-auto rounded-2xl border border-white/[0.06] bg-[#070b12] p-3 font-mono text-xs leading-6 text-[#d7deea] whitespace-pre-wrap">
-                            {commandRun.stdout_preview}
+                            {commandRun.stdoutPreview}
                           </pre>
                         )}
-                        {commandRun.stderr_preview && (
+                        {commandRun.stderrPreview && (
                           <pre className="max-h-40 overflow-auto rounded-2xl border border-[rgba(240,125,151,0.18)] bg-[rgba(240,125,151,0.08)] p-3 font-mono text-xs leading-6 text-[#f6c0cc] whitespace-pre-wrap">
-                            {commandRun.stderr_preview}
+                            {commandRun.stderrPreview}
                           </pre>
                         )}
                       </div>
@@ -523,22 +520,22 @@ export function TaskThreadView({
           </StreamCard>
 
           <StreamCard eyebrow="Report" title="Final report" tone="emerald">
-            {task.final_report ? (
+            {task.finalReport ? (
               <div className="space-y-4 text-sm leading-7 text-[#d7deea]">
                 <pre className="whitespace-pre-wrap rounded-2xl border border-white/[0.06] bg-black/25 p-4 font-sans text-[15px] leading-7 text-white">
-                  {task.final_report}
+                  {task.finalReport}
                 </pre>
-                {task.verification_result && (
+                {task.verificationResult && (
                   <div className="rounded-2xl border border-white/[0.06] bg-black/25 p-4 text-sm text-[#96a0b4]">
                     <div className="text-[10px] uppercase tracking-[0.34em] text-[#6f7889]">
                       Verification
                     </div>
                     <div className="mt-2 text-white">
-                      {task.verification_result.summary}
+                      {task.verificationResult.summary}
                     </div>
-                    {task.verification_result.errors.length > 0 && (
+                    {task.verificationResult.errors.length > 0 && (
                       <ul className="mt-3 list-disc space-y-1 pl-5 text-[#f6c0cc]">
-                        {task.verification_result.errors.map((item) => (
+                        {task.verificationResult.errors.map((item) => (
                           <li key={item}>{item}</li>
                         ))}
                       </ul>
@@ -546,14 +543,14 @@ export function TaskThreadView({
                   </div>
                 )}
               </div>
-            ) : task.verification_result ? (
+            ) : task.verificationResult ? (
               <div className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-4 text-sm leading-7 text-[#d7deea]">
                 <div className="font-medium text-white">
-                  {task.verification_result.summary}
+                  {task.verificationResult.summary}
                 </div>
-                {task.verification_result.errors.length > 0 && (
+                {task.verificationResult.errors.length > 0 && (
                   <ul className="mt-3 list-disc space-y-1 pl-5 text-[#f6c0cc]">
-                    {task.verification_result.errors.map((item) => (
+                    {task.verificationResult.errors.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
@@ -582,7 +579,7 @@ export function TaskThreadView({
                     className="rounded-2xl border border-white/[0.06] bg-black/25 px-4 py-3"
                   >
                     <div className="text-[10px] uppercase tracking-[0.24em] text-[#6f7889]">
-                      {formatTimestamp(event.timestamp)} · {event.event_type}
+                      {formatTimestamp(event.timestamp)} · {event.eventType}
                     </div>
                     <div className="mt-2 text-sm leading-6 text-[#d7deea]">
                       {event.message}
