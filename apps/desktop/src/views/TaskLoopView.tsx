@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   createTask,
   listTasks,
@@ -7,24 +7,31 @@ import {
   cancelTask,
   executeTask,
   approveRepair,
-} from '../lib/codraTaskApi';
-import type { Task } from '../lib/codraTaskApi';
+} from "../lib/codraTaskApi";
+import type { Task } from "../lib/codraTaskApi";
 
 export function TaskLoopView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [workspacePath, setWorkspacePath] = useState('');
-  const [userPrompt, setUserPrompt] = useState('');
+  const [workspacePath, setWorkspacePath] = useState("");
+  const [userPrompt, setUserPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (workspacePath.trim()) {
+      void loadTasks();
+    }
+  }, [workspacePath]);
 
   const loadTasks = async () => {
+    if (!workspacePath.trim()) {
+      setTasks([]);
+      return;
+    }
+
     try {
-      const result = await listTasks();
+      const result = await listTasks(workspacePath);
       setTasks(result);
     } catch (e: any) {
       setError(e.toString());
@@ -37,6 +44,7 @@ export function TaskLoopView() {
     setError(null);
     try {
       await scanWorkspace(workspacePath);
+      await loadTasks();
     } catch (e: any) {
       setError(e.toString());
     } finally {
@@ -46,7 +54,7 @@ export function TaskLoopView() {
 
   const handleCreateTask = async () => {
     if (!workspacePath || !userPrompt) {
-      setError('Workspace path and prompt are required');
+      setError("Workspace path and prompt are required");
       return;
     }
     setLoading(true);
@@ -73,7 +81,10 @@ export function TaskLoopView() {
     if (!selectedTask) return;
     setLoading(true);
     try {
-      const updated = await approveTask(selectedTask.id);
+      const updated = await approveTask(
+        selectedTask.id,
+        selectedTask.workspace_path,
+      );
       setSelectedTask(updated);
     } catch (e: any) {
       setError(e.toString());
@@ -86,7 +97,11 @@ export function TaskLoopView() {
     if (!selectedTask) return;
     setLoading(true);
     try {
-      const updated = await cancelTask(selectedTask.id, 'User cancelled');
+      const updated = await cancelTask(
+        selectedTask.id,
+        selectedTask.workspace_path,
+        "User cancelled",
+      );
       setSelectedTask(updated);
     } catch (e: any) {
       setError(e.toString());
@@ -99,7 +114,10 @@ export function TaskLoopView() {
     if (!selectedTask) return;
     setLoading(true);
     try {
-      const updated = await executeTask(selectedTask.id);
+      const updated = await executeTask(
+        selectedTask.id,
+        selectedTask.workspace_path,
+      );
       setSelectedTask(updated);
     } catch (e: any) {
       setError(e.toString());
@@ -112,7 +130,10 @@ export function TaskLoopView() {
     if (!selectedTask) return;
     setLoading(true);
     try {
-      const updated = await approveRepair(selectedTask.id);
+      const updated = await approveRepair(
+        selectedTask.id,
+        selectedTask.workspace_path,
+      );
       setSelectedTask(updated);
     } catch (e: any) {
       setError(e.toString());
@@ -125,7 +146,8 @@ export function TaskLoopView() {
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Task Loop (Legacy View)</h1>
       <p className="text-sm text-zinc-400 mb-6">
-        This is the previous dense TaskLoopView. The new primary interface lives in App.tsx.
+        This is the previous dense TaskLoopView. The new primary interface lives
+        in App.tsx.
       </p>
 
       <div className="space-y-4">
@@ -136,7 +158,10 @@ export function TaskLoopView() {
             value={workspacePath}
             onChange={(e) => setWorkspacePath(e.target.value)}
           />
-          <button onClick={handleScanWorkspace} className="mt-2 rounded bg-white px-4 py-1 text-black text-sm">
+          <button
+            onClick={handleScanWorkspace}
+            className="mt-2 rounded bg-white px-4 py-1 text-black text-sm"
+          >
             Scan Workspace
           </button>
         </div>
@@ -164,7 +189,7 @@ export function TaskLoopView() {
             <div
               key={t.id}
               onClick={() => selectTask(t)}
-              className={`cursor-pointer rounded p-3 mb-1 text-sm ${selectedTask?.id === t.id ? 'bg-violet-600/20' : 'bg-white/[0.03]'}`}
+              className={`cursor-pointer rounded p-3 mb-1 text-sm ${selectedTask?.id === t.id ? "bg-violet-600/20" : "bg-white/[0.03]"}`}
             >
               {t.title || t.user_prompt.slice(0, 60)} — {t.status}
             </div>
@@ -173,19 +198,41 @@ export function TaskLoopView() {
 
         {selectedTask && (
           <div className="mt-6 rounded border border-white/[0.1] p-4">
-            <div className="font-semibold mb-2">Selected: {selectedTask.title}</div>
+            <div className="font-semibold mb-2">
+              Selected: {selectedTask.title}
+            </div>
             <div className="flex gap-2">
-              {selectedTask.status === 'AwaitingApproval' && (
+              {selectedTask.status === "awaiting_approval" && (
                 <>
-                  <button onClick={handleApprove} className="rounded bg-emerald-600 px-4 py-1 text-sm">Approve</button>
-                  <button onClick={handleCancel} className="rounded border px-4 py-1 text-sm">Cancel</button>
+                  <button
+                    onClick={handleApprove}
+                    className="rounded bg-emerald-600 px-4 py-1 text-sm"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="rounded border px-4 py-1 text-sm"
+                  >
+                    Cancel
+                  </button>
                 </>
               )}
-              {selectedTask.status === 'Approved' && (
-                <button onClick={handleExecute} className="rounded bg-emerald-600 px-4 py-1 text-sm">Run Task</button>
+              {selectedTask.status === "approved" && (
+                <button
+                  onClick={handleExecute}
+                  className="rounded bg-emerald-600 px-4 py-1 text-sm"
+                >
+                  Run Task
+                </button>
               )}
-              {selectedTask.status === 'AwaitingRepairApproval' && (
-                <button onClick={handleApproveRepair} className="rounded bg-rose-600 px-4 py-1 text-sm">Approve Repair</button>
+              {selectedTask.status === "awaiting_repair_approval" && (
+                <button
+                  onClick={handleApproveRepair}
+                  className="rounded bg-rose-600 px-4 py-1 text-sm"
+                >
+                  Approve Repair
+                </button>
               )}
             </div>
           </div>

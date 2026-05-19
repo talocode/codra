@@ -12,7 +12,9 @@ Thank you for your interest in contributing to Codra by Talocode.
 6. **Run checks** before submitting:
    ```bash
    pnpm install
-   cargo check
+   pnpm check:task-loop-protocol-sync
+   pnpm --filter desktop build
+   cargo check --manifest-path apps/desktop/src-tauri/Cargo.toml
    ```
 
 ## Code of Conduct

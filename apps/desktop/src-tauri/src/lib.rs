@@ -869,8 +869,7 @@ fn codra_run_verification(
 ) -> Result<codra_protocol::Task, String> {
     let task_store = TaskStore::new(&workspace_path);
     let verifier = TaskVerifier::<RealCommandRunner>::new(task_store.clone(), RealCommandRunner);
-    // Simplified: just return the task after attempting verification
-    let _ = verifier.run_verification(&task_id, None);
+    verifier.run_verification(&task_id, None)?;
     task_store.load_task(&task_id)
 }
 
