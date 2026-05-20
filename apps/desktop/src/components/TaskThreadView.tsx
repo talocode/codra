@@ -71,13 +71,13 @@ export function TaskThreadView({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="border-b border-[color:var(--border)] px-5 py-5 sm:px-6">
+      <div className="border-b border-[color:var(--border)] px-5 py-4 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">
               Task thread
             </div>
-            <h2 className="mt-2 truncate text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+            <h2 className="mt-2 truncate text-[1.15rem] font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
               {task.title || "Untitled thread"}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
@@ -115,7 +115,7 @@ export function TaskThreadView({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-        <div className="space-y-4">
+        <div className="mx-auto w-full max-w-[1080px] space-y-4">
           <StreamCard eyebrow="Prompt" title="What should Codra build?" icon={<Wand2 className="h-4 w-4" />}>
             <p className="whitespace-pre-wrap text-[15px] leading-7 text-[var(--text-primary)]">
               {task.userPrompt}
@@ -434,7 +434,7 @@ function StreamCard({
   return (
     <section
       className={[
-        "rounded-[24px] border p-4 sm:p-5",
+        "rounded-[22px] border p-4 sm:p-5",
         tone === "danger"
           ? "border-[color:var(--danger-border)] bg-[var(--danger-card)]"
           : "border-[color:var(--border)] bg-[var(--panel-card)]",
@@ -442,7 +442,7 @@ function StreamCard({
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">{eyebrow}</div>
+          <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">{eyebrow}</div>
           <div className="mt-1 flex items-center gap-2 text-base font-medium tracking-[-0.02em] text-[var(--text-primary)]">
             {icon}
             {title}

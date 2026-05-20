@@ -6,7 +6,7 @@ import {
   MoonStar,
   Plus,
   Send,
-  Settings2,
+  Sparkles,
   SunMedium,
   Upload,
   Workflow,
@@ -65,14 +65,6 @@ function basename(path: string) {
   if (!normalized) return "";
   const parts = normalized.split(/[\\/]/).filter(Boolean);
   return parts.at(-1) || normalized;
-}
-
-function formatStatusLabel(status?: string | null) {
-  if (!status) return "Draft";
-  return status
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/_/g, " ")
-    .replace(/^./, (char) => char.toUpperCase());
 }
 
 function loadTaskSelections(): Record<string, TaskSelectionMeta> {
@@ -378,200 +370,182 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[var(--app-bg)] text-[var(--text-primary)] selection:bg-[var(--accent-soft)] selection:text-[var(--text-primary)]">
-      <div className="h-full w-full bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.10),transparent_28%),linear-gradient(180deg,var(--app-bg),var(--app-bg))] p-3">
-        <div className="grid h-full grid-cols-1 gap-3 xl:grid-cols-[340px_minmax(0,1fr)]">
-          <ThreadSidebar
-            className="min-h-[14rem] xl:min-h-0"
-            tasks={tasks}
-            selectedTaskId={selectedTaskId}
-            currentWorkspace={workspacePath}
-            workspaceContext={workspaceContext}
-            taskModelLabels={taskModelLabels}
-            onSelectTask={handleSelectTask}
-            onNewThread={handleNewThread}
-            onOpenWorkspace={handleSelectWorkspace}
-          />
+      <div className="codra-shell">
+        <ThreadSidebar
+          tasks={tasks}
+          selectedTaskId={selectedTaskId}
+          currentWorkspace={workspacePath}
+          workspaceContext={workspaceContext}
+          taskModelLabels={taskModelLabels}
+          onSelectTask={handleSelectTask}
+          onNewThread={handleNewThread}
+          onOpenWorkspace={handleSelectWorkspace}
+        />
 
-          <main className="flex min-h-0 flex-col overflow-hidden rounded-[30px] border border-[color:var(--border)] bg-[var(--panel-overlay)] shadow-[0_28px_90px_rgba(15,23,42,0.18)] backdrop-blur-xl">
-            <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4 sm:px-6">
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">
-                  Pick a model. Open a project. Prompt. Review. Ship.
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <h1 className="truncate text-lg font-semibold tracking-tight text-[var(--text-primary)] sm:text-xl">
-                    {selectedTask ? selectedTask.title || "Task thread" : "What should Codra build?"}
-                  </h1>
-                  <span className="inline-flex items-center rounded-full border border-[color:var(--border)] bg-[var(--panel-muted)] px-2.5 py-1 text-[10px] text-[var(--text-muted)]">
-                    {selectedTask ? formatStatusLabel(selectedTask.status) : "Draft thread"}
-                  </span>
-                </div>
+        <main className="codra-main">
+          <header className="flex items-center justify-between gap-4 border-b border-[color:var(--border)] px-5 py-4 sm:px-6">
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-[var(--text-muted)]">
+                {selectedTask ? "Task thread" : "New thread"}
               </div>
+              <h1 className="mt-1 truncate text-[15px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] sm:text-base">
+                {selectedTask ? selectedTask.title || "Untitled thread" : "What should Codra build?"}
+              </h1>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleNewThread}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-                >
-                  <Plus className="h-4 w-4" />
-                  New thread
-                </button>
-                <PlaceholderButton icon={<Workflow className="h-4 w-4" />} label="Handoff" />
-                <PlaceholderButton icon={<Upload className="h-4 w-4" />} label="Push" />
-                <button
-                  type="button"
-                  onClick={handleThemeToggle}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-                  title="Toggle theme"
-                >
-                  {theme === "dark" ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
-                  {theme === "dark" ? "Light" : "Dark"}
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-2.5 text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-                  title="Layout settings"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] p-2.5 text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-                  title="Settings"
-                >
-                  <Settings2 className="h-4 w-4" />
-                </button>
-              </div>
-            </header>
+            <div className="flex shrink-0 items-center gap-2">
+              <HeaderButton icon={<Plus className="h-4 w-4" />} label="New thread" onClick={handleNewThread} />
+              <HeaderButton icon={<Workflow className="h-4 w-4" />} label="Handoff" />
+              <HeaderIconButton icon={<LayoutGrid className="h-4 w-4" />} title="Tools and layout placeholder" />
+              <HeaderButton icon={<Upload className="h-4 w-4" />} label="Push" />
+              <HeaderIconButton
+                icon={theme === "dark" ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
+                onClick={handleThemeToggle}
+                title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              />
+            </div>
+          </header>
 
-            {!isTauri && (
-              <div className="flex items-start gap-2 border-b border-[color:var(--warning-border)] bg-[var(--warning-soft)] px-5 py-3 text-sm text-[var(--warning-text)] sm:px-6">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  Tauri runtime unavailable. Native folder selection and task execution only work inside the desktop app window.
-                </span>
-              </div>
-            )}
+          {!isTauri ? (
+            <div className="mx-5 mt-3 flex items-center gap-2 rounded-2xl border border-[color:var(--warning-border)] bg-[var(--warning-soft)] px-3 py-2 text-xs text-[var(--warning-text)] sm:mx-6">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Tauri runtime unavailable. Open Codra in the desktop app window for native workspace picking and task execution.</span>
+            </div>
+          ) : null}
 
-            <div className="min-h-0 flex-1 overflow-hidden">
-              {!selectedTask ? (
-                <div className="flex h-full min-h-0 overflow-y-auto px-5 py-6 sm:px-6">
-                  <div className="mx-auto flex w-full max-w-[880px] flex-col justify-center">
-                    <div className="text-center">
-                      <div className="text-[10px] uppercase tracking-[0.32em] text-[var(--text-muted)]">
-                        Open-source agentic coding app for TeraAI
-                      </div>
-                      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
-                        What should Codra build?
-                      </h2>
-                      <p className="mx-auto mt-3 max-w-[42rem] text-sm leading-6 text-[var(--text-muted)] sm:text-[15px]">
-                        Codra will show a plan before changing files.
-                      </p>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {selectedTask ? (
+              <TaskThreadView
+                task={selectedTask}
+                events={events}
+                workspacePath={workspacePath}
+                workspaceContext={workspaceContext}
+                modelLabel={selectedTaskSelection ? getModelLabel(selectedTaskSelection.selectedProvider, selectedTaskSelection.selectedModel) : selectedModelLabel}
+                providerLabel={selectedTaskSelection?.selectedProvider ?? modelConfig.selectedProvider}
+                providerRuntimeStatus={selectedTaskSelection?.providerRuntimeStatus ?? selectedProviderRuntime}
+                onTaskUpdated={handleTaskUpdated}
+                onRefreshEvents={refreshEvents}
+              />
+            ) : (
+              <div className="flex h-full min-h-0 overflow-y-auto px-5 py-6 sm:px-6">
+                <div className="mx-auto flex w-full max-w-[860px] flex-1 flex-col items-center justify-center">
+                  <div className="w-full max-w-[720px] text-center">
+                    <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-[18px] border border-[color:var(--border)] bg-[var(--panel-muted)] text-[var(--accent)] shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+                      <Sparkles className="h-6 w-6" />
+                    </div>
+                    <div className="mt-5 text-[11px] uppercase tracking-[0.28em] text-[var(--text-muted)]">
+                      Desktop coding agent
+                    </div>
+                    <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-primary)] sm:text-[2.6rem]">
+                      What should Codra build?
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-[36rem] text-sm leading-6 text-[var(--text-muted)] sm:text-[15px]">
+                      Open a project, pick a model, and describe the change. Codra will plan before it edits anything.
+                    </p>
+                  </div>
+
+                  <section className="mt-8 w-full max-w-[720px] rounded-[28px] border border-[color:var(--border)] bg-[var(--panel-card)] p-4 shadow-[0_32px_90px_rgba(0,0,0,0.30)] sm:p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ComposerBadge icon={<FolderOpen className="h-3.5 w-3.5" />}>{workspaceLabel}</ComposerBadge>
+                      <ComposerBadge>{workspaceContext?.gitBranch ? `local • ${workspaceContext.gitBranch}` : "local workspace"}</ComposerBadge>
+                      {isScanningWorkspace ? <ComposerBadge>Scanning workspace…</ComposerBadge> : null}
                     </div>
 
-                    <div className="mt-8 rounded-[30px] border border-[color:var(--border)] bg-[var(--panel-card)] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] sm:p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
-                          <ComposerBadge icon={<FolderOpen className="h-3.5 w-3.5" />}>
-                            {workspaceLabel}
-                          </ComposerBadge>
-                          <ComposerBadge>{workspaceContext?.gitBranch ? `local • ${workspaceContext.gitBranch}` : "local workspace"}</ComposerBadge>
-                          <ComposerBadge>{selectedModelLabel}</ComposerBadge>
-                          <ComposerBadge>{selectedProviderRuntime}</ComposerBadge>
-                          {isScanningWorkspace ? <ComposerBadge>Scanning workspace…</ComposerBadge> : null}
-                        </div>
+                    <textarea
+                      value={prompt}
+                      onChange={(event) => {
+                        setPrompt(event.target.value);
+                        setError(null);
+                      }}
+                      placeholder="Describe the bug, feature, refactor, or workflow you want Codra to handle."
+                      className="mt-4 min-h-[190px] w-full resize-none rounded-[24px] border border-[color:var(--border)] bg-[var(--panel-base)] px-4 py-4 text-[15px] leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[color:var(--accent)]"
+                    />
+
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--border)] pt-4">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <ComposerActionButton icon={<Plus className="h-4 w-4" />} label="Context" />
+                        <ModelPicker value={modelConfig} onChange={updateModelConfig} />
+                        <ComposerBadge>{selectedModelLabel}</ComposerBadge>
+                        <ComposerBadge>{selectedProviderRuntime}</ComposerBadge>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2.5">
                         <button
                           type="button"
                           onClick={handleSelectWorkspace}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
+                          className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3.5 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
                         >
                           <FolderOpen className="h-4 w-4" />
                           Open project
                         </button>
-                      </div>
-
-                      <textarea
-                        value={prompt}
-                        onChange={(event) => {
-                          setPrompt(event.target.value);
-                          setError(null);
-                        }}
-                        placeholder="Describe the change, bug, refactor, or feature you want Codra to handle."
-                        className="mt-4 min-h-[220px] w-full resize-y rounded-[26px] border border-[color:var(--border)] bg-[var(--panel-base)] px-5 py-4 text-[15px] leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[color:var(--accent)]"
-                      />
-
-                      <div className="mt-4 flex flex-col gap-3 border-t border-[color:var(--border)] pt-4 xl:flex-row xl:items-end xl:justify-between">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <button
-                            type="button"
-                            className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3.5 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Add context
-                          </button>
-                          <ModelPicker value={modelConfig} onChange={updateModelConfig} />
-                        </div>
-
-                        <div className="flex flex-col items-start gap-3 xl:items-end">
-                          <p className="text-sm text-[var(--text-muted)]">
-                            Pick a model. Open a project. Prompt. Review. Ship.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={handleCreateTask}
-                            disabled={!canCreateTask}
-                            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[var(--accent)] px-5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Send className="h-4 w-4" />
-                            {isCreatingTask ? "Creating task…" : "Create task"}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCreateTask}
+                          disabled={!canCreateTask}
+                          className="inline-flex min-h-10 items-center gap-2 rounded-2xl bg-[var(--accent)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Send className="h-4 w-4" />
+                          {isCreatingTask ? "Creating…" : "Create task"}
+                        </button>
                       </div>
                     </div>
-
-                    {workspaceContext ? (
-                      <div className="mt-5 grid gap-3 md:grid-cols-3">
-                        <ContextCard label="Detected stack" value={workspaceContext.detectedStack.join(" · ") || "Unknown"} />
-                        <ContextCard label="Branch" value={workspaceContext.gitBranch || "—"} />
-                        <ContextCard label="Config files" value={workspaceContext.detectedConfigFiles.slice(0, 3).join(" · ") || "None detected"} />
-                      </div>
-                    ) : null}
-                  </div>
+                  </section>
                 </div>
-              ) : (
-                <TaskThreadView
-                  task={selectedTask}
-                  events={events}
-                  workspacePath={workspacePath}
-                  workspaceContext={workspaceContext}
-                  modelLabel={selectedTaskSelection ? getModelLabel(selectedTaskSelection.selectedProvider, selectedTaskSelection.selectedModel) : selectedModelLabel}
-                  providerLabel={selectedTaskSelection?.selectedProvider ?? modelConfig.selectedProvider}
-                  providerRuntimeStatus={selectedTaskSelection?.providerRuntimeStatus ?? selectedProviderRuntime}
-                  onTaskUpdated={handleTaskUpdated}
-                  onRefreshEvents={refreshEvents}
-                />
-              )}
-            </div>
-
-            {error && (
-              <div className="border-t border-[color:var(--danger-border)] bg-[var(--danger-soft)] px-5 py-3 text-sm text-[var(--danger-text)] sm:px-6">
-                {error}
               </div>
             )}
-          </main>
-        </div>
+          </div>
+
+          {error ? (
+            <div className="border-t border-[color:var(--danger-border)] bg-[var(--danger-soft)] px-5 py-3 text-sm text-[var(--danger-text)] sm:px-6">
+              {error}
+            </div>
+          ) : null}
+        </main>
       </div>
     </div>
   );
 }
 
-function PlaceholderButton({ icon, label }: { icon: ReactNode; label: string }) {
+function HeaderButton({ icon, label, onClick }: { icon: ReactNode; label: string; onClick?: () => void }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
-      title={`${label} placeholder`}
+      title={label}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+}
+
+function HeaderIconButton({
+  icon,
+  onClick,
+  title,
+}: {
+  icon: ReactNode;
+  onClick?: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
+    >
+      {icon}
+    </button>
+  );
+}
+
+function ComposerActionButton({ icon, label }: { icon: ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-[color:var(--border)] bg-[var(--panel-muted)] px-3.5 text-sm text-[var(--text-primary)] transition hover:border-[color:var(--border-strong)] hover:bg-[var(--panel-elevated)]"
     >
       {icon}
       {label}
@@ -585,14 +559,5 @@ function ComposerBadge({ children, icon }: { children: ReactNode; icon?: ReactNo
       {icon}
       {children}
     </span>
-  );
-}
-
-function ContextCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] border border-[color:var(--border)] bg-[var(--panel-card)] px-4 py-4">
-      <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-muted)]">{label}</div>
-      <div className="mt-2 text-sm leading-6 text-[var(--text-primary)]">{value}</div>
-    </div>
   );
 }

@@ -8,20 +8,25 @@ function isTheme(value: unknown): value is AppTheme {
 }
 
 export function loadTheme(): AppTheme {
+  if (typeof window === "undefined") {
+    return DEFAULT_THEME;
+  }
+
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = window.localStorage.getItem(STORAGE_KEY);
     if (isTheme(stored)) {
       return stored;
     }
   } catch {
     // ignore storage access failures
   }
+
   return DEFAULT_THEME;
 }
 
 export function saveTheme(theme: AppTheme): AppTheme {
   try {
-    localStorage.setItem(STORAGE_KEY, theme);
+    window.localStorage.setItem(STORAGE_KEY, theme);
   } catch {
     // ignore storage access failures
   }
@@ -32,6 +37,7 @@ export function applyTheme(theme: AppTheme) {
   if (typeof document === "undefined") {
     return;
   }
+
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }
