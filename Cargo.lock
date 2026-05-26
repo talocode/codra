@@ -622,6 +622,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "codra-runtime"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "futures",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "codra-tools"
 version = "0.1.0"
 dependencies = [
