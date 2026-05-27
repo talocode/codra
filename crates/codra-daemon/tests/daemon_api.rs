@@ -1,6 +1,4 @@
 use reqwest::Client;
-use std::time::Duration;
-use tempfile::tempdir;
 
 #[tokio::test]
 async fn health_returns_ok() {
@@ -16,6 +14,38 @@ async fn health_returns_ok() {
     }
     let resp = resp.unwrap();
     assert_eq!(resp.status(), 200);
+}
+
+#[tokio::test]
+async fn worker_health_returns_ok() {
+    let client = Client::new();
+    let resp = client
+        .get("http://127.0.0.1:4390/api/workers/health")
+        .send()
+        .await;
+
+    if resp.is_err() {
+        println!("Daemon not running on 4390, skipping worker_health test");
+        return;
+    }
+    let resp = resp.unwrap();
+    assert_eq!(resp.status(), 200);
+
+    let body: serde_json::Value = resp.json().await.unwrap();
+    assert_eq!(body["status"], "ok");
+    assert!(body["daemon_id"].is_string());
+    assert!(body["hostname"].is_string());
+    assert!(body["os"].is_string());
+    assert!(body["arch"].is_string());
+    assert!(body["uptime_seconds"].is_number());
+    assert_eq!(body["remote_worker_protocol_version"], "0.1");
+
+    let caps = &body["capabilities"];
+    assert_eq!(caps["task_execution"], true);
+    assert_eq!(caps["event_streaming"], true);
+    assert_eq!(caps["approval_forwarding"], false);
+    assert_eq!(caps["remote_pairing"], false);
+    assert_eq!(caps["mdns_discovery"], false);
 }
 
 #[tokio::test]

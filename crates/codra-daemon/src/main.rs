@@ -64,6 +64,11 @@ async fn main() -> anyhow::Result<()> {
         event_tx: event_tx.clone(),
     };
 
+    // Worker health routes are outside the auth gate so remote controllers
+    // can probe without a token. The health payload is safe: no secrets,
+    // no filesystem paths, no tokens.
+    let worker_routes = Router::new().route("/workers/health", get(worker_health));
+
     let api_routes = Router::new()
         .route("/workspace/scan", get(scan_workspace))
         .route("/tasks", post(create_task).get(list_tasks))
@@ -82,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/health", get(health))
-        .nest("/api", api_routes)
+        .nest("/api", worker_routes.nest("/", api_routes))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -139,6 +144,8 @@ async fn auth_middleware(
     next.run(request).await
 }
 
+// ── Global endpoints (no auth) ─────────────────────────────────
+
 async fn health() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "ok",
@@ -147,6 +154,13 @@ async fn health() -> Json<serde_json::Value> {
         "local_only": true
     }))
 }
+
+/// GET /api/workers/health — unauthenticated worker health probe.
+async fn worker_health(State(state): State<AppState>) -> Json<state::WorkerHealthResponse> {
+    Json(state.inner.worker_health())
+}
+
+// ── Auth-gated API endpoints ───────────────────────────────────
 
 #[derive(Deserialize)]
 struct ScanQuery {
