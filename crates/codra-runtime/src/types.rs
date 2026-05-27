@@ -431,6 +431,120 @@ pub struct ApprovalPolicy {
     pub max_auto_approve_per_session: usize,
 }
 
+// ── Remote Worker Types ─────────────────────────────────────────
+
+/// Unique identifier for a worker instance.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct WorkerId(pub String);
+
+/// A worker's public identity metadata.
+///
+/// The full cryptographic identity (X25519 keypair) is stored
+/// separately on disk. This type carries the public-facing
+/// fingerprint and label used for pairing and display.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkerIdentity {
+    pub worker_id: WorkerId,
+    pub label: String,
+    /// SHA-256 of the X25519 static public key, hex-encoded.
+    pub pin_sha256: String,
+    pub worker_version: String,
+}
+
+/// Whether a paired worker is currently reachable and load-bearing.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum WorkerStatus {
+    #[serde(rename = "offline")]
+    Offline,
+    #[serde(rename = "idle")]
+    Idle,
+    #[serde(rename = "busy")]
+    Busy,
+    #[serde(rename = "degraded")]
+    Degraded,
+}
+
+/// The level of trust a controller grants to a worker (or vice versa).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TrustLevel {
+    #[serde(rename = "untrusted")]
+    Untrusted,
+    #[serde(rename = "limited")]
+    Limited,
+    #[serde(rename = "standard")]
+    Standard,
+    #[serde(rename = "elevated")]
+    Elevated,
+    #[serde(rename = "full")]
+    Full,
+}
+
+/// The current state of a pairing request between controller and worker.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PairingStatus {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "approved")]
+    Approved,
+    #[serde(rename = "rejected")]
+    Rejected,
+    #[serde(rename = "expired")]
+    Expired,
+    #[serde(rename = "revoked")]
+    Revoked,
+}
+
+/// Worker-side record of a paired controller.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredPeer {
+    pub controller_id: String,
+    pub controller_label: String,
+    pub pin_sha256: String,
+    pub trust_level: TrustLevel,
+    pub trusted_at: String,
+}
+
+/// Controller-side record of a paired worker.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredPairing {
+    pub worker_id: WorkerId,
+    pub worker_label: String,
+    pub pin_sha256: String,
+    pub worker_host: String,
+    pub worker_port: u16,
+    pub trust_level: TrustLevel,
+    pub paired_at: String,
+    pub last_seen: String,
+}
+
+/// Declared capabilities of a worker, advertised during health probes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkerCapabilities {
+    pub task_execution: bool,
+    pub event_streaming: bool,
+    pub approval_forwarding: bool,
+    pub remote_pairing: bool,
+    pub mdns_discovery: bool,
+}
+
+/// Health response returned by a worker's GET /api/workers/health endpoint.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkerHealth {
+    pub status: String,
+    pub worker_id: WorkerId,
+    pub version: String,
+    pub hostname: String,
+    pub os: String,
+    pub arch: String,
+    pub uptime_seconds: u64,
+    pub supported_runtime_kinds: Vec<RuntimeKind>,
+    pub available_runtimes: Vec<String>,
+    pub workspace_mode: String,
+    pub remote_worker_protocol_version: String,
+    pub capabilities: WorkerCapabilities,
+}
+
 impl Default for SafetyConfig {
     fn default() -> Self {
         Self {
@@ -457,5 +571,139 @@ impl Default for SafetyConfig {
             ],
             max_concurrent_tasks: 1,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn worker_identity_round_trip() {
+        let identity = WorkerIdentity {
+            worker_id: WorkerId("wkr-001".to_string()),
+            label: "Build Server Alpha".to_string(),
+            pin_sha256: "a3f1c8e2b7d4...".to_string(),
+            worker_version: "0.1.0".to_string(),
+        };
+        let json = serde_json::to_string(&identity).unwrap();
+        let deserialized: WorkerIdentity = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.worker_id, identity.worker_id);
+        assert_eq!(deserialized.pin_sha256, "a3f1c8e2b7d4...");
+    }
+
+    #[test]
+    fn trust_level_wire_values() {
+        assert_eq!(
+            serde_json::to_value(TrustLevel::Untrusted).unwrap(),
+            serde_json::json!("untrusted")
+        );
+        assert_eq!(
+            serde_json::to_value(TrustLevel::Limited).unwrap(),
+            serde_json::json!("limited")
+        );
+        assert_eq!(
+            serde_json::to_value(TrustLevel::Standard).unwrap(),
+            serde_json::json!("standard")
+        );
+        assert_eq!(
+            serde_json::to_value(TrustLevel::Elevated).unwrap(),
+            serde_json::json!("elevated")
+        );
+        assert_eq!(
+            serde_json::to_value(TrustLevel::Full).unwrap(),
+            serde_json::json!("full")
+        );
+    }
+
+    #[test]
+    fn worker_status_wire_values() {
+        assert_eq!(
+            serde_json::to_value(WorkerStatus::Offline).unwrap(),
+            serde_json::json!("offline")
+        );
+        assert_eq!(
+            serde_json::to_value(WorkerStatus::Idle).unwrap(),
+            serde_json::json!("idle")
+        );
+        assert_eq!(
+            serde_json::to_value(WorkerStatus::Busy).unwrap(),
+            serde_json::json!("busy")
+        );
+        assert_eq!(
+            serde_json::to_value(WorkerStatus::Degraded).unwrap(),
+            serde_json::json!("degraded")
+        );
+    }
+
+    #[test]
+    fn pairing_status_wire_values() {
+        assert_eq!(
+            serde_json::to_value(PairingStatus::Pending).unwrap(),
+            serde_json::json!("pending")
+        );
+        assert_eq!(
+            serde_json::to_value(PairingStatus::Approved).unwrap(),
+            serde_json::json!("approved")
+        );
+        assert_eq!(
+            serde_json::to_value(PairingStatus::Rejected).unwrap(),
+            serde_json::json!("rejected")
+        );
+        assert_eq!(
+            serde_json::to_value(PairingStatus::Expired).unwrap(),
+            serde_json::json!("expired")
+        );
+        assert_eq!(
+            serde_json::to_value(PairingStatus::Revoked).unwrap(),
+            serde_json::json!("revoked")
+        );
+    }
+
+    #[test]
+    fn stored_peer_serializes() {
+        let peer = StoredPeer {
+            controller_id: "ctrl-abc".to_string(),
+            controller_label: "My Desktop".to_string(),
+            pin_sha256: "deadbeef".to_string(),
+            trust_level: TrustLevel::Standard,
+            trusted_at: "2026-01-15T10:30:00Z".to_string(),
+        };
+        let json = serde_json::to_value(&peer).unwrap();
+        assert_eq!(json["controller_id"], "ctrl-abc");
+        assert_eq!(json["trust_level"], "standard");
+        assert_eq!(json["trusted_at"], "2026-01-15T10:30:00Z");
+    }
+
+    #[test]
+    fn worker_health_serializes_with_capabilities() {
+        let health = WorkerHealth {
+            status: "ok".to_string(),
+            worker_id: WorkerId("wkr-001".to_string()),
+            version: "0.1.0".to_string(),
+            hostname: "build-server".to_string(),
+            os: "linux".to_string(),
+            arch: "aarch64".to_string(),
+            uptime_seconds: 86400,
+            supported_runtime_kinds: vec![RuntimeKind::LocalAgent],
+            available_runtimes: vec![],
+            workspace_mode: "local_only".to_string(),
+            remote_worker_protocol_version: "0.1".to_string(),
+            capabilities: WorkerCapabilities {
+                task_execution: true,
+                event_streaming: true,
+                approval_forwarding: false,
+                remote_pairing: false,
+                mdns_discovery: false,
+            },
+        };
+        let json = serde_json::to_value(&health).unwrap();
+        assert_eq!(json["status"], "ok");
+        assert_eq!(json["worker_id"], "wkr-001");
+        assert!(json["capabilities"]["task_execution"].as_bool().unwrap());
+        assert!(!json["capabilities"]["approval_forwarding"]
+            .as_bool()
+            .unwrap());
+        assert!(!json["capabilities"]["mdns_discovery"].as_bool().unwrap());
     }
 }
