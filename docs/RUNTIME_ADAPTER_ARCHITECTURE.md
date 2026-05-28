@@ -237,6 +237,16 @@ pub enum RuntimeCategory {
 
     /// Local LLM (Ollama, LM Studio, llama.cpp) with Codra's own agent loop.
     LocalModel,
+
+    /// Computer-use agent runtime (Cua-like sandbox, browser automation, GUI control).
+    /// Can see screen state, click, type, run shell commands, and verify UI outcomes.
+    /// Runs in a sandboxed environment, not on the user's host directly.
+    ComputerUseAgent,
+
+    /// Sandboxed agent runtime (container/VM-isolated execution for risky tasks).
+    /// Provides full filesystem/network isolation from the user's main machine.
+    /// Often hosts a ComputerUseAgent inside the sandbox.
+    SandboxAgent,
 }
 ```
 
@@ -489,6 +499,21 @@ pub struct RuntimeCapabilities {
     pub supports_planning: bool,
     pub supports_verification: bool,
     pub supports_repair: bool,
+
+    // ── Computer-Use & Sandbox Capabilities ─────────────────
+    /// Can observe and interact with the OS GUI (click, type, drag, scroll).
+    pub supports_gui_control: bool,
+    /// Can capture screen state as images (full-screen, window, region).
+    pub supports_screenshot: bool,
+    /// Can record and replay task trajectories (events + screenshots at each step).
+    pub supports_replay: bool,
+    /// Runs in an isolated sandbox (container/VM) with no host filesystem access.
+    pub supports_sandbox: bool,
+    /// Can launch and control a headless or headed web browser.
+    pub supports_browser: bool,
+    /// Can control mobile device emulators or physical devices (ADB, simulators).
+    pub supports_mobile_device: bool,
+
     pub max_concurrent_sessions: usize,
     pub available_tools: Vec<String>,
     pub model_info: Option<ModelInfo>,
@@ -942,3 +967,244 @@ pub struct RuntimeFactoryInfo {
 | **API key propagation** | Multiple runtimes may need different API keys, stored in different places. | Unified `RuntimeConfig.api_key` + runtime-specific `extra` map. Providers handle key wrapping. |
 | **Backward compatibility** | Existing codra-core types (Task, TaskStatus, TaskEvent) duplicate runtime types. | Runtime types live in `codra-runtime`. Legacy codra-core types become one implementation (LocalModel runtime). Migration path: adapters map to legacy types where needed. |
 | **Feature disparity** | Not all runtimes support all capabilities (fork, clone, streaming). | `RuntimeCapabilities` struct lets consumers check before calling. Graceful fallback. |
+
+---
+
+## Future: Computer-Use & Sandbox Runtimes
+
+### Design Principle: Code First, Computer-Use Later
+
+Codra's architecture treats **code runtimes** (Planner→Executor→Verifier, file edits, shell commands, git) as the primary execution path and **computer-use runtimes** (GUI automation, browser observation, screen interaction) as a future extension. This priority ladder guides all implementation choices:
+
+```
+Priority 1: Code runtimes (LocalAgent, CliAgent, CloudAgent, DirectModel, LocalModel)
+Priority 2: Computer-use runtimes (ComputerUseAgent — see Cua architecture)
+Priority 3: Sandbox runtimes (SandboxAgent — isolated execution environments)
+Priority 4: Mobile device runtimes (MobileDeviceAgent — emulator/ADB control)
+```
+
+### What a Computer-Use Runtime Does
+
+A `ComputerUseAgent` runtime can:
+- **Observe screen state** — capture full-screen, window, or region screenshots; read pixel data
+- **Interact with GUI** — click, drag, scroll, type, press keys at OS level
+- **Run shell commands** — within the sandbox environment (not the host)
+- **Control browsers** — navigate, click elements, extract text via CDP or Playwright-style APIs
+- **Verify UI outcomes** — compare screenshots against expected state, detect visual regressions
+- **Record trajectories** — every action + resulting screenshot + model thought for replay
+
+Key difference from code runtimes: a computer-use runtime operates on **visual state**, not just file/process state. The agent must interpret pixels, not just text.
+
+### What a Sandbox Runtime Does
+
+A `SandboxAgent` runtime wraps another runtime in an isolated environment:
+- **Container isolation** (Docker/Podman) for Linux, **VM isolation** for cross-platform safety
+- **No host filesystem access** — workspace is copied into the sandbox; results are extracted
+- **Network policy** — can be restricted (no internet), bridged (limited ports), or open
+- **Resource limits** — CPU, memory, disk, network bandwidth caps
+- **Ephemeral by default** — containers destroyed after task completion unless snapshot is saved
+- **Snapshot/resume** — save sandbox state mid-task for debugging or replay
+
+Sandboxes are the natural host for `ComputerUseAgent` runtimes, since GUI automation requires elevated OS access that shouldn't run directly on the user's machine.
+
+### Capability Flags
+
+The `RuntimeCapabilities` struct (defined above) includes six computer-use/sandbox flags:
+
+| Flag | Meaning | Example Runtimes |
+|------|---------|-----------------|
+| `supports_gui_control` | Can click, type, drag at OS level | Cua sandbox, WinAppDriver, Xvfb + xdotool |
+| `supports_screenshot` | Can capture screen as image | Chromium CDP, Xvfb + ImageMagick, Windows GDI |
+| `supports_replay` | Can record + replay task trajectories | Cua sandbox (step replay), Browserstack sessions |
+| `supports_sandbox` | Runs in isolated container/VM | Docker executor, Firecracker microVM, QEMU |
+| `supports_browser` | Can launch and control browser | Chromium CDP, Playwright, Selenium |
+| `supports_mobile_device` | Controls emulator or physical device | Android ADB, iOS simulator, Browserstack device cloud |
+
+### Runtime Categories for Computer-Use & Sandbox
+
+```rust
+pub enum RuntimeCategory {
+    // Existing:
+    LocalAgent,
+    CliAgent,
+    CloudAgent,
+    DirectModel,
+    LocalModel,
+
+    // New:
+    /// Computer-use agent — observes and interacts with a GUI environment.
+    /// Can be hosted inside a sandbox for isolation.
+    ComputerUseAgent,
+
+    /// Sandboxed agent — wraps any runtime in an isolated container/VM.
+    /// The sandbox provides filesystem, network, and resource isolation.
+    /// Often paired with a ComputerUseAgent inside the sandbox.
+    SandboxAgent,
+}
+```
+
+### Task Traces: Commands, Diffs, Approvals, Screenshots, Trajectories
+
+Codra task traces should evolve to include computer-use and sandbox artifacts:
+
+```rust
+pub struct ComputerUseStep {
+    pub step_index: u32,
+    pub action: ComputerUseAction,         // what the agent did
+    pub screenshot_before: Option<String>,  // base64 PNG before action
+    pub screenshot_after: Option<String>,   // base64 PNG after action
+    pub dom_snapshot: Option<String>,       // accessibility tree / DOM
+    pub model_thought: Option<String>,      // what the model was thinking
+    pub action_result: String,              // success/failure/error
+    pub timestamp: String,
+}
+
+pub struct TaskTrace {
+    pub task_id: String,
+    pub session_id: String,
+    pub runtime_category: RuntimeCategory,
+
+    // Code runtime artifacts:
+    pub commands_run: Vec<CommandRunRecord>,
+    pub file_changes: Vec<FileChangeRecord>,
+    pub approvals: Vec<ApprovalRecord>,
+
+    // Computer-use artifacts (when applicable):
+    pub computer_use_steps: Option<Vec<ComputerUseStep>>,
+
+    // Sandbox artifacts (when applicable):
+    pub sandbox_id: Option<String>,
+    pub sandbox_snapshot_path: Option<String>,
+
+    // Replay metadata:
+    pub total_steps: u32,
+    pub supports_replay: bool,
+    pub replay_format: Option<String>,  // "cua_trajectory_v1", "codra_trace_v1"
+}
+```
+
+### Architecture: How Computer-Use & Sandbox Fit Into Each Surface
+
+#### Codra Desktop
+
+- **Runtime picker** shows computer-use and sandbox runtimes alongside code runtimes
+- **Session pane** displays screenshots inline (before/after each action)
+- **Replay viewer** lets users step through task trajectories frame-by-frame
+- **Sandbox indicator** shows resource usage, isolation status, network policy
+- Desktop itself never hosts a computer-use runtime — it connects to remote sandboxes
+
+#### Codra CLI/TUI
+
+- `codra sandbox create` — provision a sandbox (local Docker or remote worker)
+- `codra sandbox attach <id>` — stream events from sandbox runtime
+- `codra sandbox exec <id> "command"` — run commands inside sandbox
+- `codra replay <task-id>` — step through a recorded trajectory
+- `codra screenshot <task-id> <step>` — view screenshot at a specific step
+
+#### Codra Daemon
+
+- REST endpoints for sandbox lifecycle: `POST /api/sandboxes`, `DELETE /api/sandboxes/:id`
+- REST endpoints for replay: `GET /api/tasks/:id/trajectory`, `GET /api/tasks/:id/replay`
+- SSE streams include screenshot metadata alongside events
+- Acts as gateway: desktops/CLIs talk to daemon, daemon talks to sandbox workers
+
+#### Android/Telegram Control Layer
+
+- Receive screenshot thumbnails in approval notifications
+- Approve/reject GUI actions (click here, type this) from phone
+- View task replay as a slideshow of screenshots
+- Remotely start/stop sandbox runtimes
+
+#### Codex SDK Runtime
+
+- Codex SDK's `computer_use` tools map to `ComputerUseActionKind` (ClickTarget, TypeText, PressKey)
+- Codex SDK's screenshot capabilities map to `ComputerUseStep.screenshot_*`
+- The same `CodraRuntime` trait works — just with additional capability flags set
+
+#### Claude Code / OpenCode / Pi / Hermes Runtimes
+
+- These CLI tools don't support computer-use natively
+- When used through Codra, the CLI adapter treats them as code-only (`supports_gui_control: false`)
+- Users can still route their tasks into a sandbox that happens to use a different runtime
+
+#### Future Cua-like Sandbox Runtime
+
+A `ComputerUseAgent` runtime modeled after Cua's architecture would:
+
+```
+┌───────────────────────────────────────────────┐
+│           CuaSandboxRuntime                     │
+│  ┌─────────────────────────────────────────┐   │
+│  │ 1. Provision container                  │   │
+│  │    - Docker / Firecracker / QEMU        │   │
+│  │    - Mount workspace copy               │   │
+│  │    - Configure network policy           │   │
+│  │    - Set resource limits                │   │
+│  └─────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────┐   │
+│  │ 2. Start Xvfb + window manager          │   │
+│  │    - Virtual framebuffer (Xvfb)         │   │
+│  │    - Lightweight WM (fluxbox, jwm)     │   │
+│  │    - VNC or pipe screenshot stream      │   │
+│  └─────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────┐   │
+│  │ 3. Agent loop inside container           │   │
+│  │    - LLM → thought → action → observe   │   │
+│  │    - Actions: click, type, shell, wait  │   │
+│  │    - Observation: screenshot + a11y tree│   │
+│  └─────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────┐   │
+│  │ 4. Stream events + screenshots back     │   │
+│  │    - Every step: screenshot + action    │   │
+│  │    - Approval requests for risky ops    │   │
+│  │    - On container exit: collect results │   │
+│  └─────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────┐   │
+│  │ 5. Return artifacts                     │   │
+│  │    - TaskTrace with trajectory          │   │
+│  │    - Screenshots at each step           │   │
+│  │    - File diffs (if workspace modified) │   │
+│  │    - Replay-ready trajectory JSON       │   │
+│  └─────────────────────────────────────────┘   │
+└───────────────────────────────────────────────┘
+```
+
+The `ComputerUseAgent` and `SandboxAgent` runtime categories are **additive** to the existing architecture:
+- They don't change the `CodraRuntime` trait — the same `submit_task`, `approve`, `stream_events` interface works
+- They add new capability flags so consumers can decide what UI to show
+- They introduce new data types (`ComputerUseStep`, `TaskTrace`) for task artifacts
+- They enable one runtime to host another (`SandboxAgent` contains a `ComputerUseAgent`)
+
+### Planning vs. Computer-Use Priority
+
+```
+Current (MVP):
+  Code runtimes only
+  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
+  │LLA  │ │CLI  │ │Cloud│ │Model│
+  └─────┘ └─────┘ └─────┘ └─────┘
+
+Phase 2:
+  + Computer-use runtime (remote sandbox only)
+  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌──────────┐
+  │Code │ │CLI  │ │Cloud│ │Model│ │CuaSandbox│
+  └─────┘ └─────┘ └─────┘ └─────┘ └──────────┘
+                                      │
+                                 ┌────▼────┐
+                                 │ Worker   │
+                                 │ (remote) │
+                                 └─────────┘
+
+Phase 3:
+  + Local sandbox (for offline/low-risk computer-use)
+  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌──────────┐ ┌────────────┐
+  │Code │ │CLI  │ │Cloud│ │Model│ │CuaSandbox│ │LocalSandbox│
+  └─────┘ └─────┘ └─────┘ └─────┘ └──────────┘ └────────────┘
+
+Phase 4:
+  + Mobile device runtime
+  + Cross-runtime task handoff (code → sandbox → mobile)
+  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐
+  │Code │ │CLI  │ │Cloud│ │Model│ │CuaSandbox│ │LocalSandbox│ │MobileDev │
+  └─────┘ └─────┘ └─────┘ └─────┘ └──────────┘ └────────────┘ └──────────┘
+```

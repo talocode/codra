@@ -674,7 +674,272 @@ and fans out events to all connected control surfaces.
 
 ---
 
-## Worker Mode Daemon Configuration
+---
+
+## Future: Computer-Use & Sandbox Runtimes on Workers
+
+### Design Principle
+
+Remote workers are the natural host for computer-use and sandbox runtimes. A Controller delegates a GUI-intensive or high-risk task to a Worker that runs a `ComputerUseAgent` or `SandboxAgent` runtime, and the Controller never touches the execution environment directly.
+
+### Sandbox Workers
+
+A sandbox Worker runs each task inside an isolated environment:
+
+```
+                        ┌──────────────────────────────────┐
+                        │          CONTROL SURFACES          │
+                        │                                   │
+              ┌─────────┼──────┬───────────┬────────────┐   │
+              │         │      │           │            │   │
+         ┌────▼──┐ ┌────▼──┐ ┌─▼──────┐  ┌─▼──────┐     │   │
+         │Desktop│ │CLI/TUI│ │Telegram│  │Android │     │   │
+         └───┬───┘ └───┬───┘ └───┬────┘  └───┬────┘     │   │
+             └─────────┼─────────┼───────────┘          │   │
+                       │         │                      │   │
+                  ┌────▼─────────▼──────────────┐       │   │
+                  │        codra-daemon          │       │   │
+                  │    (gateway + controller)    │       │   │
+                  │                              │       │   │
+                  │  Submits task to sandbox     │       │   │
+                  │  Streams screenshots back    │       │   │
+                  │  Forwards approvals          │       │   │
+                  └────────────┬─────────────────┘       │   │
+                               │                         │   │
+                    ┌──────────▼──────────┐              │   │
+                    │   Worker (remote)    │              │   │
+                    │                      │              │   │
+                    │  ┌────────────────┐  │              │   │
+                    │  │ SandboxManager  │  │              │   │
+                    │  │                │  │              │   │
+                    │  │ 1. Request SS  │  │              │   │
+                    │  │    → Docker    │  │              │   │
+                    │  │      Container │  │              │   │
+                    │  │    → Firecracker│  │              │   │
+                    │  │      MicroVM   │  │              │   │
+                    │  └───────┬────────┘  │              │   │
+                    │          │           │              │   │
+                    │  ┌───────▼────────┐  │              │   │
+                    │  │ Inside Sandbox  │  │              │   │
+                    │  │                │  │              │   │
+                    │  │ Xvfb + WM      │  │              │   │
+                    │  │ ComputerUseRT  │  │              │   │
+                    │  │ LLM + agent    │  │              │   │
+                    │  └────────────────┘  │              │   │
+                    └──────────────────────┘              │   │
+                                                           └───┘
+```
+
+#### Sandbox Lifecycle on Workers
+
+```
+1. Controller submits task with runtime_category: "ComputerUseAgent"
+       │
+2. Worker checks capabilities → supports_sandbox: true
+       │
+3. Worker provisions sandbox:
+   ┌────────────────────────────────────────────┐
+   │  - Rust's bollard crate → Docker API call   │
+   │  - Image: cua-sandbox:latest               │
+   │  - Mounts: workspace copy (read-only)      │
+   │  - Resources: 4 CPU, 8GB RAM, 20GB disk    │
+   │  - Network: isolated bridge, no egress     │
+   │  - GPU: optional passthrough               │
+   └────────────────────────────────────────────┘
+       │
+4. Worker starts agent loop inside sandbox:
+   ┌────────────────────────────────────────────┐
+   │  - Xvfb :99 -screen 0 1920x1080x24         │
+   │  - fluxbox (lightweight window manager)    │
+   │  - Agent process watching :99 via CDP + VNC│
+   └────────────────────────────────────────────┘
+       │
+5. Worker streams screenshots + events over peer-link:
+   ┌────────────────────────────────────────────┐
+   │  - Every agent step: screenshot + action    │
+   │  - Screenshot encoded as base64 PNG        │
+   │  - Approval requests for risky GUI ops     │
+   │  - All events ride same Noise XX WS        │
+   └────────────────────────────────────────────┘
+       │
+6. Controller renders screenshots inline in UI
+       │
+7. Task completes → Worker tears down sandbox
+       │
+8. Artifacts returned to Controller:
+   ┌────────────────────────────────────────────┐
+   │  - TaskTrace with full trajectory          │
+   │  - Screenshots at each step               │
+   │  - File diffs (if workspace modified)      │
+   │  - Sandbox logs                            │
+   │  - Replay-ready trajectory JSON            │
+   └────────────────────────────────────────────┘
+```
+
+#### Sandbox Runtimes on Workers
+
+| Runtime | Isolation | Use Case | Worker Config |
+|---------|-----------|----------|---------------|
+| `ComputerUseAgent` | Docker container + Xvfb | UI testing, browser automation, visual debugging | GPU passthrough, display env, CDP ports |
+| `BrowserAgent` | Docker container + Chromium | Web testing, screenshot verification | CDP port mapping, site allowlist |
+| `MobileEmulator` | Android emulator in Docker | Mobile app testing, ADB control | KVM passthrough, ADB port mapping |
+| `GenericSandbox` | Docker / Firecracker / QEMU | Risky commands, unknown code execution | Resource caps, network policy, snapshot volume |
+
+### Screenshot Streaming Over Peer-Link
+
+When a Worker hosts a `ComputerUseAgent`, screenshots are streamed inline:
+
+```rust
+pub struct ScreenshotFrame {
+    pub step_index: u32,
+    pub action: ComputerUseAction,
+    pub screenshot: String,    // base64 PNG
+    pub dom_snapshot: Option<String>,
+    pub cursor_position: Option<(u32, u32)>,
+    pub timestamp: String,
+}
+```
+
+These frames ride the same Noise XX encrypted WebSocket as other RuntimeEvents. The Controller:
+- Receives `ScreenshotFrame` events
+- Renders screenshots inline (desktop: image in session pane; CLI: ascii art or file output)
+- Stores screenshots in the task trace for replay
+
+### Task Trajectory Replay Over Peer-Link
+
+Replay is a special stream mode where the Worker resends a recorded task's events:
+
+```
+Controller sends: { "type": "replay_request", "task_id": "..." }
+Worker responds:  { "type": "event", "kind": "ReplayStarting", "total_steps": 42 }
+Worker streams:   { "type": "event", "kind": "ReplayStep", "step": 5, ... }
+                  // Each step includes: action, before_screenshot, after_screenshot,
+                  //   dom_snapshot, model_thought, action_result
+Worker ends:      { "type": "event", "kind": "ReplayCompleted" }
+```
+
+The replay stream uses the same RuntimeEvent types — no new transport needed. The Worker reads from its stored `TaskTrace` and replays events as if they were happening live.
+
+### Worker Configuration for Sandbox Runtimes
+
+```toml
+# ~/.codra/worker/config.toml
+
+[worker]
+enabled = true
+bind_host = "0.0.0.0"
+bind_port = 9091
+name = "Sandbox Worker"
+max_concurrent_tasks = 1   # sandbox tasks are resource-heavy
+
+[worker.capabilities]
+supports_gui_control = true
+supports_screenshot = true
+supports_replay = true
+supports_sandbox = true
+supports_browser = true
+supports_mobile_device = false   # not available on this hardware
+
+[sandbox]
+provider = "docker"        # docker, firecracker, qemu
+default_image = "cua-sandbox:latest"
+ephemeral = true            # destroy sandbox after each task
+workspace_mount_mode = "copy"  # copy, bind, mount
+cpu_limit = 4
+memory_limit = "8GB"
+disk_limit = "20GB"
+network_isolation = true
+gpu_passthrough = false
+max_run_duration_seconds = 3600
+
+[sandbox.volumes]
+# Additional volumes to mount inside sandbox
+node_modules = "/home/user/.codra/sandbox-cache/node_modules"
+
+[sandbox.env]
+# Environment variables injected into sandbox
+DISPLAY = ":99"
+RESOLUTION = "1920x1080x24"
+```
+
+### Integration With Existing Surfaces
+
+#### Codra Desktop
+- **Runtime picker** shows sandbox workers with capability badges ("GUI", "Sandbox", "Browser")
+- **Session pane** renders screenshots inline with before/after toggle
+- **Replay viewer** lets users step through trajectories with arrow keys
+- **Sanbox tab** shows resource usage, network policy, remaining time
+
+#### Codra CLI/TUI
+- `codra sandbox provision` — request a sandbox worker
+- `codra sandbox attach <id>` — stream events with screenshots (or screencast)
+- `codra replay <task-id>` — step through recorded trajectory
+- `codra replay export <task-id> --format cua_v1` — export for Cua-compatible tools
+
+#### Codra Daemon
+- New endpoints: `POST /api/sandboxes`, `DELETE /api/sandboxes/:id`, `GET /api/sandboxes/:id/status`
+- Screenshot metadata in SSE events
+- Acts as broker: desktop → daemon → sandbox worker → stream back
+
+#### Android/Telegram Control Layer
+- Receive screenshot thumbnails in approval notifications
+- Approve/reject GUI actions ("click OK button", "type password") from phone
+- View replay as slideshow of keyframes
+- Track sandbox resource usage remotely
+
+#### Codex SDK Runtime (Code runtimes, no GUI)
+- Codex SDK tasks route to regular workers, not sandbox workers
+- Sandbox not needed — Codex SDK runs locally or on a standard worker
+- The `RuntimeCapabilities.supports_gui_control` flag tells Codra not to attempt remote desktop on Codex tasks
+
+#### Claude Code / OpenCode / Pi / Hermes Runtimes (Code runtimes, no GUI)
+- These CLI tools are code-only; they don't need sandbox or computer-use capabilities
+- They can still be run inside a sandbox (GenericSandbox) for isolation, without GUI
+- The sandbox simply runs the CLI tool in the container — no Xvfb needed
+
+#### Future Cua-like Sandbox Runtime
+- A new `cua-sandbox` crate implementing `CodraRuntime` with `ComputerUseAgent` category
+- Uses Docker/Firecracker for isolation, Xvfb for display, CDP for browser control
+- Streams screenshots as `ScreenshotFrame` events over peer-link
+- Returns `TaskTrace` with full trajectory for replay
+- Can be hosted on any Worker with Docker and GPU support
+
+### Priority Ladder for Remote Workers
+
+```
+Worker type               Capabilities                           Deployed on
+───────────────────────────────────────────────────────────────────────────────────
+Code Worker               supports_sandbox: false                LAN machine
+(NativeCodraRuntime)      supports_gui_control: false            or cloud VM
+
+Sandbox Code Worker       supports_sandbox: true                 Cloud VM with Docker
+(GenericSandbox)          supports_gui_control: false            or bare metal
+
+Sandbox Computer-Use      supports_sandbox: true                 GPU-enabled cloud VM
+Worker (Cua-like RT)      supports_gui_control: true             or powerful workstation
+                          supports_screenshot: true
+                          supports_replay: true
+                          supports_browser: true
+
+Sandbox Mobile Worker     supports_sandbox: true                 KVM-enabled cloud VM
+(MobileDeviceAgent)       supports_mobile_device: true           with Android emulator
+                          supports_screenshot: true
+                          supports_replay: true
+```
+
+### Next Steps for Sandbox/Computer-Use on Workers
+
+1. **Define types** — `ComputerUseAction`, `ScreenshotFrame`, `TaskTrace`, `ReplayRequest` in `codra-protocol` or `codra-runtime`
+2. **Add capability flags** — `supports_gui_control`, `supports_sandbox`, etc. to `WorkerCapabilities`
+3. **Create sandbox manager trait** — `ProvisionSandbox`, `DestroySandbox`, `GetSandboxStatus` in `codra-runtime`
+4. **Implement Docker sandbox provider** — using `bollard` crate, container lifecycle management
+5. **Add screenshot streaming** — extend peer-link protocol with binary screenshot frames
+6. **Add replay endpoint** — `replay_task` on Worker that replays stored `TaskTrace` over peer-link
+7. **Integrate with daemon** — `POST /api/sandboxes` → provision, stream events back
+8. **UI: screenshot viewer** — desktop image rendering, CLI ascii fallback
+9. **UI: replay viewer** — step through trajectories with keyboard controls
+
+
 
 ```toml
 # ~/.codra/worker/config.toml
