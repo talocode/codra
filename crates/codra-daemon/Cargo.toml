@@ -16,6 +16,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
 codra-core = { path = "../codra-core" }
 codra-protocol = { path = "../codra-protocol" }
+codra-runtime = { path = "../codra-runtime" }
 anyhow = { workspace = true }
 async-stream = "0.3"
 futures = "0.3"

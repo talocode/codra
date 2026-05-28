@@ -555,6 +555,7 @@ dependencies = [
  "codra-runtime",
  "codra-tools",
  "reqwest 0.12.28",
+ "serde",
  "serde_json",
  "tokio",
 ]
@@ -585,6 +586,7 @@ dependencies = [
  "clap",
  "codra-core",
  "codra-protocol",
+ "codra-runtime",
  "dirs 5.0.1",
  "futures",
  "reqwest 0.12.28",

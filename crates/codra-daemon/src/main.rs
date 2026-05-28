@@ -10,7 +10,7 @@ use axum::{
 use clap::Parser;
 use codra_core::workspace_scanner::WorkspaceScanner;
 use codra_protocol::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -67,7 +67,9 @@ async fn main() -> anyhow::Result<()> {
     // Worker health routes are outside the auth gate so remote controllers
     // can probe without a token. The health payload is safe: no secrets,
     // no filesystem paths, no tokens.
-    let worker_routes = Router::new().route("/workers/health", get(worker_health));
+    let worker_routes = Router::new()
+        .route("/workers/health", get(worker_health))
+        .route("/workers/tasks/stub", post(worker_tasks_stub));
 
     let api_routes = Router::new()
         .route("/workspace/scan", get(scan_workspace))
@@ -152,6 +154,87 @@ async fn health() -> Json<serde_json::Value> {
         "service": "codra-daemon",
         "version": "0.1.0",
         "local_only": true
+    }))
+}
+
+/// POST /api/workers/tasks/stub — stub remote task submission.
+/// Does not execute anything. Validates payload and returns a receipt.
+#[derive(Serialize, Deserialize)]
+struct RemoteTaskStubRequest {
+    task_prompt: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    controller_id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workspace_hint: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    requested_runtime_id: Option<String>,
+
+    #[serde(default = "default_true")]
+    dry_run: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Serialize, Deserialize)]
+struct RemoteTaskStubResponse {
+    accepted: bool,
+    remote_task_id: String,
+    status: String,
+    message: String,
+    received_prompt_preview: String,
+    worker_health_summary: String,
+    next_step: String,
+}
+
+const MAX_TASK_PROMPT_BYTES: usize = 1024 * 64; // 64 KiB
+const PROMPT_PREVIEW_CHARS: usize = 200;
+
+async fn worker_tasks_stub(
+    State(state): State<AppState>,
+    Json(payload): Json<RemoteTaskStubRequest>,
+) -> Result<Json<RemoteTaskStubResponse>, AppError> {
+    if payload.task_prompt.trim().is_empty() {
+        return Err(AppError::BadRequest("task_prompt is required".into()));
+    }
+
+    if payload.task_prompt.len() > MAX_TASK_PROMPT_BYTES {
+        return Err(AppError::BadRequest(format!(
+            "task_prompt exceeds maximum size of {} bytes",
+            MAX_TASK_PROMPT_BYTES
+        )));
+    }
+
+    let task_id = uuid::Uuid::new_v4().to_string();
+    let prompt_preview: String = payload
+        .task_prompt
+        .chars()
+        .take(PROMPT_PREVIEW_CHARS)
+        .collect();
+    let health = state.inner.worker_health();
+    let health_summary = format!(
+        "{} | {} {} | {}s uptime",
+        health.status, health.os, health.arch, health.uptime_seconds
+    );
+
+    Ok(Json(RemoteTaskStubResponse {
+        accepted: true,
+        remote_task_id: task_id,
+        status: "stubbed".to_string(),
+        message: "Remote task submission reached worker. Execution is not enabled yet.".to_string(),
+        received_prompt_preview: if prompt_preview.len() < payload.task_prompt.len() {
+            format!("{}…", prompt_preview)
+        } else {
+            prompt_preview
+        },
+        worker_health_summary: health_summary,
+        next_step:
+            "Use 'codra worker submit' with --dry-run=false once remote execution is enabled."
+                .to_string(),
     }))
 }
 
@@ -359,5 +442,88 @@ impl IntoResponse for AppError {
             ),
         };
         (status, body).into_response()
+    }
+}
+
+// ── Tests ────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn stub_request_serializes() {
+        let req = RemoteTaskStubRequest {
+            task_prompt: "write a test".to_string(),
+            controller_id: Some("ctrl-001".to_string()),
+            workspace_hint: None,
+            requested_runtime_id: None,
+            dry_run: true,
+        };
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["task_prompt"], "write a test");
+        assert_eq!(json["controller_id"], "ctrl-001");
+        assert_eq!(json["dry_run"], true);
+        // Optional fields omitted when None
+        assert!(json.get("workspace_hint").is_none());
+    }
+
+    #[test]
+    fn stub_request_empty_prompt_rejected() {
+        // Simulate the validation check done by the handler
+        let payload = RemoteTaskStubRequest {
+            task_prompt: "   ".to_string(),
+            controller_id: None,
+            workspace_hint: None,
+            requested_runtime_id: None,
+            dry_run: true,
+        };
+        assert!(payload.task_prompt.trim().is_empty());
+    }
+
+    #[test]
+    fn stub_response_deserializes() {
+        let json = serde_json::json!({
+            "accepted": true,
+            "remote_task_id": "abc-123",
+            "status": "stubbed",
+            "message": "Remote task submission reached worker. Execution is not enabled yet.",
+            "received_prompt_preview": "write a test",
+            "worker_health_summary": "ok | linux aarch64 | 42s uptime",
+            "next_step": "Use 'codra worker submit' with --dry-run=false once remote execution is enabled."
+        });
+        let resp: RemoteTaskStubResponse = serde_json::from_value(json).unwrap();
+        assert!(resp.accepted);
+        assert_eq!(resp.status, "stubbed");
+        assert_eq!(resp.remote_task_id, "abc-123");
+        assert!(resp.message.contains("not enabled yet"));
+        assert!(resp.next_step.contains("dry-run"));
+    }
+
+    #[test]
+    fn prompt_preview_truncated() {
+        let long_prompt = "x".repeat(500);
+        let preview: String = long_prompt.chars().take(PROMPT_PREVIEW_CHARS).collect();
+        assert_eq!(preview.len(), PROMPT_PREVIEW_CHARS);
+        let truncated = if preview.len() < long_prompt.len() {
+            format!("{}…", preview)
+        } else {
+            preview.clone()
+        };
+        assert_eq!(truncated.len(), PROMPT_PREVIEW_CHARS + 3); // '…' is 3 bytes
+        assert!(truncated.ends_with('…'));
+    }
+
+    #[test]
+    fn stub_request_exceeds_max_size() {
+        let req = RemoteTaskStubRequest {
+            task_prompt: "x".repeat(MAX_TASK_PROMPT_BYTES + 1),
+            controller_id: None,
+            workspace_hint: None,
+            requested_runtime_id: None,
+            dry_run: true,
+        };
+        assert!(req.task_prompt.len() > MAX_TASK_PROMPT_BYTES);
     }
 }

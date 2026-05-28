@@ -8,6 +8,7 @@ name = "codra"
 path = "src/main.rs"
 
 [dependencies]
+serde = { workspace = true }
 serde_json.workspace = true
 codra-core = { path = "../codra-core" }
 codra-protocol = { path = "../codra-protocol" }

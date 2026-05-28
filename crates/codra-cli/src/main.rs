@@ -6,6 +6,7 @@ use codra_runtime::{
 };
 use codra_tools::design::load_design_system;
 use codra_tools::registry::builtin_tool_definitions;
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
@@ -123,6 +124,7 @@ fn worker_command(args: &[String]) -> Result<(), String> {
         "list" => worker_list(),
         "pair" => worker_pair(&args[1..]),
         "remove" | "unpair" => worker_remove(&args[1..]),
+        "submit" => worker_submit(&args[1..]),
         "trust" => worker_trust(&args[1..]),
         _ => {
             println!("codra worker <command>");
@@ -133,6 +135,7 @@ fn worker_command(args: &[String]) -> Result<(), String> {
             println!(
                 "  remove|unpair <worker_id>                    Remove/unpair a registered worker"
             );
+            println!("  submit <worker_id> <prompt>                   Submit a remote task (stub)");
             println!("  trust <worker_id> <level>                    Update trust level");
             Ok(())
         }
@@ -396,6 +399,104 @@ fn worker_trust(args: &[String]) -> Result<(), String> {
     } else {
         println!("Worker '{}' not found.", worker_id);
     }
+    Ok(())
+}
+
+#[derive(Serialize)]
+struct RemoteTaskSubmitRequest {
+    task_prompt: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    controller_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workspace_hint: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    requested_runtime_id: Option<String>,
+    #[serde(default = "yes")]
+    dry_run: bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+#[derive(Deserialize)]
+struct RemoteTaskSubmitResponse {
+    accepted: bool,
+    remote_task_id: String,
+    status: String,
+    message: String,
+    received_prompt_preview: String,
+    worker_health_summary: String,
+    next_step: String,
+}
+
+fn worker_submit(args: &[String]) -> Result<(), String> {
+    let worker_id = args
+        .first()
+        .ok_or_else(|| "Usage: codra worker submit <worker_id> <prompt>".to_string())?;
+    let prompt = args
+        .get(1)
+        .ok_or_else(|| "Usage: codra worker submit <worker_id> <prompt>".to_string())?;
+
+    let store = WorkerStore::new_global();
+    let worker = store
+        .get_worker(&WorkerId(worker_id.clone()))
+        .ok_or_else(|| format!("Worker '{}' not found in registry", worker_id))?;
+
+    // Trust gate: reject untrusted or limited workers
+    if worker.trust_level == TrustLevel::Untrusted || worker.trust_level == TrustLevel::Limited {
+        return Err(format!(
+            "Worker '{}' has trust level '{}'. Remote task submission requires at least 'standard'.\nUse 'codra worker trust {} <level>' to upgrade.",
+            worker_id, worker.trust_level, worker_id
+        ));
+    }
+
+    let url = format!(
+        "http://{}:{}/api/workers/tasks/stub",
+        worker.worker_host, worker.worker_port
+    );
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let payload = RemoteTaskSubmitRequest {
+        task_prompt: prompt.clone(),
+        controller_id: None,
+        workspace_hint: None,
+        requested_runtime_id: None,
+        dry_run: true,
+    };
+
+    let resp = client
+        .post(&url)
+        .json(&payload)
+        .send()
+        .map_err(|e| format!("Failed to reach worker '{}' at {}: {}", worker_id, url, e))?;
+
+    let status = resp.status();
+    if !status.is_success() {
+        let body = resp.text().unwrap_or_default();
+        return Err(format!(
+            "Worker '{}' returned HTTP {}: {}",
+            worker_id, status, body
+        ));
+    }
+
+    let result: RemoteTaskSubmitResponse = resp
+        .json()
+        .map_err(|e| format!("Malformed response from worker '{}': {}", worker_id, e))?;
+
+    println!("Remote task submitted:");
+    println!("  worker id:   {}", worker_id);
+    println!("  task id:     {}", result.remote_task_id);
+    println!("  status:      {}", result.status);
+    println!("  message:     {}", result.message);
+    println!("  prompt:      {}", result.received_prompt_preview);
+    println!("  worker:      {}", result.worker_health_summary);
+    println!("  next:        {}", result.next_step);
+
     Ok(())
 }
 
