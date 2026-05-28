@@ -480,6 +480,32 @@ pub enum TrustLevel {
     Full,
 }
 
+impl std::fmt::Display for TrustLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Untrusted => write!(f, "untrusted"),
+            Self::Limited => write!(f, "limited"),
+            Self::Standard => write!(f, "standard"),
+            Self::Elevated => write!(f, "elevated"),
+            Self::Full => write!(f, "full"),
+        }
+    }
+}
+
+impl std::str::FromStr for TrustLevel {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "untrusted" => Ok(Self::Untrusted),
+            "limited" => Ok(Self::Limited),
+            "standard" => Ok(Self::Standard),
+            "elevated" => Ok(Self::Elevated),
+            "full" => Ok(Self::Full),
+            _ => Err(format!("Unknown trust level '{}'; expected one of: untrusted, limited, standard, elevated, full", s)),
+        }
+    }
+}
+
 /// The current state of a pairing request between controller and worker.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PairingStatus {
@@ -543,6 +569,20 @@ pub struct WorkerHealth {
     pub workspace_mode: String,
     pub remote_worker_protocol_version: String,
     pub capabilities: WorkerCapabilities,
+}
+
+impl WorkerHealth {
+    /// Provisional identity bytes for deriving a fingerprint when the
+    /// daemon does not yet expose a public key.  Concatenates the
+    /// most stable, identifying fields so the fingerprint is
+    /// deterministic unless the worker identity or platform changes.
+    pub fn provisional_fingerprint_bytes(&self) -> Vec<u8> {
+        format!(
+            "{}|{}|{}|{}",
+            self.worker_id.0, self.remote_worker_protocol_version, self.os, self.arch,
+        )
+        .into_bytes()
+    }
 }
 
 impl Default for SafetyConfig {
@@ -705,5 +745,52 @@ mod tests {
             .as_bool()
             .unwrap());
         assert!(!json["capabilities"]["mdns_discovery"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn trust_level_display_and_parse() {
+        for (level_str, variant) in [
+            ("untrusted", TrustLevel::Untrusted),
+            ("limited", TrustLevel::Limited),
+            ("standard", TrustLevel::Standard),
+            ("elevated", TrustLevel::Elevated),
+            ("full", TrustLevel::Full),
+        ] {
+            assert_eq!(variant.to_string(), level_str);
+            assert_eq!(level_str.parse::<TrustLevel>().unwrap(), variant);
+        }
+        assert!("unknown".parse::<TrustLevel>().is_err());
+    }
+
+    #[test]
+    fn provisional_fingerprint_bytes_is_deterministic() {
+        let health = WorkerHealth {
+            status: "ok".to_string(),
+            worker_id: WorkerId("wkr-001".to_string()),
+            version: "0.1.0".to_string(),
+            hostname: "build-server".to_string(),
+            os: "linux".to_string(),
+            arch: "aarch64".to_string(),
+            uptime_seconds: 86400,
+            supported_runtime_kinds: vec![],
+            available_runtimes: vec![],
+            workspace_mode: "local_only".to_string(),
+            remote_worker_protocol_version: "0.1".to_string(),
+            capabilities: WorkerCapabilities {
+                task_execution: true,
+                event_streaming: true,
+                approval_forwarding: false,
+                remote_pairing: false,
+                mdns_discovery: false,
+            },
+        };
+        let bytes1 = health.provisional_fingerprint_bytes();
+        let bytes2 = health.provisional_fingerprint_bytes();
+        assert_eq!(bytes1, bytes2);
+        let encoded = String::from_utf8_lossy(&bytes1);
+        assert!(encoded.contains("wkr-001"));
+        assert!(encoded.contains("linux"));
+        assert!(encoded.contains("aarch64"));
+        assert!(encoded.contains("0.1"));
     }
 }

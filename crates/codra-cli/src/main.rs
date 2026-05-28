@@ -1,11 +1,13 @@
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
-use codra_runtime::{StoredPairing, TrustLevel, WorkerHealth, WorkerId, WorkerStore};
+use codra_runtime::{
+    PairingFingerprint, StoredPairing, TrustLevel, WorkerHealth, WorkerId, WorkerStore,
+};
 use codra_tools::design::load_design_system;
 use codra_tools::registry::builtin_tool_definitions;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 
 fn main() {
@@ -119,13 +121,19 @@ fn worker_command(args: &[String]) -> Result<(), String> {
         "add" => worker_add(&args[1..]),
         "check" | "probe" => worker_check(&args[1..]),
         "list" => worker_list(),
-        "remove" => worker_remove(&args[1..]),
+        "pair" => worker_pair(&args[1..]),
+        "remove" | "unpair" => worker_remove(&args[1..]),
+        "trust" => worker_trust(&args[1..]),
         _ => {
             println!("codra worker <command>");
             println!("  add <url> --fingerprint <pin-or-fingerprint>  Register a remote worker");
             println!("  check|probe <worker_id>                      Probe worker health endpoint");
             println!("  list                                        List registered workers");
-            println!("  remove <worker_id>                          Remove a registered worker");
+            println!("  pair <url>                                   Interactive pair and verify");
+            println!(
+                "  remove|unpair <worker_id>                    Remove/unpair a registered worker"
+            );
+            println!("  trust <worker_id> <level>                    Update trust level");
             Ok(())
         }
     }
@@ -244,6 +252,147 @@ fn worker_remove(args: &[String]) -> Result<(), String> {
 
     if removed {
         println!("Removed worker '{}'.", worker_id);
+    } else {
+        println!("Worker '{}' not found.", worker_id);
+    }
+    Ok(())
+}
+
+fn worker_pair(args: &[String]) -> Result<(), String> {
+    let url = args
+        .first()
+        .ok_or_else(|| "Usage: codra worker pair <url> [--trust <level>]".to_string())?;
+
+    let trust_override = args
+        .iter()
+        .position(|a| a == "--trust")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|s| s.parse::<TrustLevel>().ok());
+
+    let health_url = format!("{}/api/workers/health", url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let resp = client
+        .get(&health_url)
+        .send()
+        .map_err(|e| format!("Failed to reach worker at {}: {}", health_url, e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!(
+            "Worker at {} returned HTTP {}",
+            health_url,
+            resp.status()
+        ));
+    }
+
+    let health: WorkerHealth = resp
+        .json()
+        .map_err(|e| format!("Malformed health response: {}", e))?;
+
+    // Derive provisional fingerprint from stable fields
+    let fp = PairingFingerprint::from_bytes(&health.provisional_fingerprint_bytes());
+    let pin = fp.pin();
+
+    // Display pairing preview
+    println!("Pairing preview");
+    println!("  worker id:       {}", health.worker_id.0);
+    println!("  URL:             {}", url.trim_end_matches('/'));
+    println!("  hostname:        {}", health.hostname);
+    println!("  os / arch:       {} / {}", health.os, health.arch);
+    println!("  daemon version:  {}", health.version);
+    println!(
+        "  protocol:        {}",
+        health.remote_worker_protocol_version
+    );
+    println!("  capabilities:");
+    println!(
+        "    task_execution:  {}",
+        yesno(health.capabilities.task_execution)
+    );
+    println!(
+        "    event_streaming: {}",
+        yesno(health.capabilities.event_streaming)
+    );
+    println!(
+        "    remote_pairing:  {}",
+        yesno(health.capabilities.remote_pairing)
+    );
+    println!(
+        "    approval_fwd:    {}",
+        yesno(health.capabilities.approval_forwarding)
+    );
+    println!(
+        "    mdns_discovery:  {}",
+        yesno(health.capabilities.mdns_discovery)
+    );
+    println!("  fingerprint:     {}", fp);
+    println!("  PIN:             {}", pin);
+
+    // Prompt for confirmation
+    print!("Pair this worker? Type the PIN to confirm: ");
+    io::stdout().flush().map_err(|e| e.to_string())?;
+
+    let mut input = String::new();
+    io::stdin()
+        .lock()
+        .read_line(&mut input)
+        .map_err(|e| e.to_string())?;
+    let input = input.trim().to_string();
+
+    if input != pin.as_str() {
+        return Err("PIN does not match — pairing rejected.".to_string());
+    }
+
+    println!("PIN verified ✓");
+
+    let url_trimmed = url.trim_end_matches('/');
+    let (host, port) = parse_worker_url(url_trimmed)?;
+    let trust_level = trust_override.unwrap_or(TrustLevel::Standard);
+
+    let worker = StoredPairing {
+        worker_id: WorkerId(health.worker_id.0.clone()),
+        worker_label: health.hostname.clone(),
+        pin_sha256: fp.as_hex().to_string(),
+        worker_host: host,
+        worker_port: port,
+        trust_level: trust_level.clone(),
+        paired_at: chrono::Utc::now().to_rfc3339(),
+        last_seen: chrono::Utc::now().to_rfc3339(),
+    };
+
+    let store = WorkerStore::new_global();
+    store
+        .add_worker(worker)
+        .map_err(|e| format!("Failed to register worker: {}", e))?;
+
+    println!("Worker paired successfully.");
+    println!("  ID:       {}", health.worker_id.0);
+    println!("  URL:      {}", url_trimmed);
+    println!("  Trust:    {}", trust_level);
+    println!("  Store:    {}", store.file_path().display());
+
+    Ok(())
+}
+
+fn worker_trust(args: &[String]) -> Result<(), String> {
+    let worker_id = args
+        .first()
+        .ok_or_else(|| "Usage: codra worker trust <worker_id> <level>".to_string())?;
+    let level_str = args
+        .get(1)
+        .ok_or_else(|| "Usage: codra worker trust <worker_id> <level>".to_string())?;
+
+    let level: TrustLevel = level_str.parse().map_err(|e: String| e)?;
+    let store = WorkerStore::new_global();
+    let updated = store
+        .update_trust_level(&WorkerId(worker_id.clone()), level.clone())
+        .map_err(|e| format!("Failed to update trust level: {}", e))?;
+
+    if updated {
+        println!("Worker '{}' trust level set to '{}'.", worker_id, level);
     } else {
         println!("Worker '{}' not found.", worker_id);
     }
@@ -374,7 +523,9 @@ fn help() -> Result<(), String> {
     println!("  worker add        Register a remote worker");
     println!("  worker check      Probe a registered worker's health endpoint");
     println!("  worker list       List registered workers");
-    println!("  worker remove     Remove a registered worker");
+    println!("  worker pair       Interactive pair and verify a remote worker");
+    println!("  worker trust      Update a worker's trust level");
+    println!("  worker remove     Remove/unpair a registered worker");
     println!("  headless <intent> Run a dry-run headless planning surface");
     println!("  mcp-server        Print MCP-compatible server/tool metadata");
     Ok(())
