@@ -1,6 +1,7 @@
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
+use codra_runtime::{StoredPairing, TrustLevel, WorkerId, WorkerStore};
 use codra_tools::design::load_design_system;
 use codra_tools::registry::builtin_tool_definitions;
 use std::env;
@@ -19,6 +20,10 @@ fn main() {
             } else {
                 help()
             }
+        }
+        "worker" => {
+            args.remove(0);
+            worker_command(&args)
         }
         "headless" => headless(
             args.get(1)
@@ -106,10 +111,165 @@ fn default_provider_config() -> ProviderConfig {
     }
 }
 
+// ── Worker Commands ──────────────────────────────────────────────
+
+fn worker_command(args: &[String]) -> Result<(), String> {
+    let sub = args.first().map(String::as_str).unwrap_or("help");
+    match sub {
+        "add" => worker_add(&args[1..]),
+        "list" => worker_list(),
+        "remove" => worker_remove(&args[1..]),
+        _ => {
+            println!("codra worker <command>");
+            println!("  add <url> --fingerprint <pin-or-fingerprint>  Register a remote worker");
+            println!("  list                                        List registered workers");
+            println!("  remove <worker_id>                          Remove a registered worker");
+            Ok(())
+        }
+    }
+}
+
+fn worker_add(args: &[String]) -> Result<(), String> {
+    let url = args.first().ok_or_else(|| {
+        "Usage: codra worker add <url> --fingerprint <pin-or-fingerprint>".to_string()
+    })?;
+
+    let fingerprint_idx = args
+        .iter()
+        .position(|a| a == "--fingerprint")
+        .ok_or_else(|| "Missing --fingerprint argument".to_string())?;
+    let fingerprint = args
+        .get(fingerprint_idx + 1)
+        .ok_or_else(|| "Missing value for --fingerprint".to_string())?;
+
+    let health_url = format!("{}/api/workers/health", url.trim_end_matches('/'));
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let resp = client
+        .get(&health_url)
+        .send()
+        .map_err(|e| format!("Failed to reach worker at {}: {}", health_url, e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!(
+            "Worker at {} returned status {}",
+            health_url,
+            resp.status()
+        ));
+    }
+
+    let health: serde_json::Value = resp
+        .json()
+        .map_err(|e| format!("Failed to parse health response: {}", e))?;
+
+    let worker_id = health["worker_id"]
+        .as_str()
+        .unwrap_or("unknown")
+        .to_string();
+    let worker_label = health["hostname"]
+        .as_str()
+        .unwrap_or("remote-worker")
+        .to_string();
+    let version = health["version"].as_str().unwrap_or("0.0.0").to_string();
+
+    let url_trimmed = url.trim_end_matches('/');
+    let (host, port) = parse_worker_url(url_trimmed)?;
+
+    let worker = StoredPairing {
+        worker_id: WorkerId(worker_id.clone()),
+        worker_label,
+        pin_sha256: fingerprint.clone(),
+        worker_host: host,
+        worker_port: port,
+        trust_level: TrustLevel::Standard,
+        paired_at: chrono::Utc::now().to_rfc3339(),
+        last_seen: chrono::Utc::now().to_rfc3339(),
+    };
+
+    let store = WorkerStore::new_global();
+    store
+        .add_worker(worker)
+        .map_err(|e| format!("Failed to register worker: {}", e))?;
+
+    println!("Registered worker:");
+    println!("  ID:      {}", worker_id);
+    println!("  URL:     {}", url_trimmed);
+    println!("  Version: {}", version);
+    println!("  Store:   {}", store.file_path().display());
+
+    Ok(())
+}
+
+fn worker_list() -> Result<(), String> {
+    let store = WorkerStore::new_global();
+    let workers = store.list_workers();
+
+    if workers.is_empty() {
+        println!("No workers registered.");
+        println!("  Use: codra worker add <url> --fingerprint <pin>");
+        return Ok(());
+    }
+
+    println!("Registered workers ({}):", workers.len());
+    for w in &workers {
+        println!(
+            "  {}  {}  {}  {}:{}  {}",
+            w.worker_id.0,
+            w.worker_label,
+            serde_json::to_value(&w.trust_level)
+                .map(|v| v.as_str().unwrap_or("?").to_string())
+                .unwrap_or_else(|_| "?".to_string()),
+            w.worker_host,
+            w.worker_port,
+            w.last_seen,
+        );
+    }
+    Ok(())
+}
+
+fn worker_remove(args: &[String]) -> Result<(), String> {
+    let worker_id = args
+        .first()
+        .ok_or_else(|| "Usage: codra worker remove <worker_id>".to_string())?;
+
+    let store = WorkerStore::new_global();
+    let removed = store
+        .remove_worker(&WorkerId(worker_id.clone()))
+        .map_err(|e| format!("Failed to remove worker: {}", e))?;
+
+    if removed {
+        println!("Removed worker '{}'.", worker_id);
+    } else {
+        println!("Worker '{}' not found.", worker_id);
+    }
+    Ok(())
+}
+
+/// Parse a URL like `http://192.168.1.100:8080` into (host, port).
+fn parse_worker_url(url: &str) -> Result<(String, u16), String> {
+    let url = url
+        .strip_prefix("http://")
+        .or_else(|| url.strip_prefix("https://"))
+        .unwrap_or(url);
+    let parts: Vec<&str> = url.splitn(2, ':').collect();
+    let host = parts[0].to_string();
+    let port = parts
+        .get(1)
+        .and_then(|p| p.parse::<u16>().ok())
+        .unwrap_or(80);
+    Ok((host, port))
+}
+
 fn help() -> Result<(), String> {
     println!("codra <command>");
     println!("  smoke             Validate local tool registry and workspace readiness");
     println!("  provider check    Check active provider health");
+    println!("  worker add        Register a remote worker");
+    println!("  worker list       List registered workers");
+    println!("  worker remove     Remove a registered worker");
     println!("  headless <intent> Run a dry-run headless planning surface");
     println!("  mcp-server        Print MCP-compatible server/tool metadata");
     Ok(())

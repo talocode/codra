@@ -11,4 +11,8 @@ path = "src/main.rs"
 serde_json.workspace = true
 codra-core = { path = "../codra-core" }
 codra-protocol = { path = "../codra-protocol" }
+codra-runtime = { path = "../codra-runtime" }
 codra-tools = { path = "../codra-tools" }
+chrono = { workspace = true }
+reqwest = { workspace = true, features = ["blocking"] }
+tokio = { workspace = true }

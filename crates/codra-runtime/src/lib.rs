@@ -3,6 +3,7 @@ pub mod pairing;
 pub mod registry;
 pub mod traits;
 pub mod types;
+pub mod worker_store;
 
 pub mod stub;
 
@@ -12,3 +13,4 @@ pub use pairing::{PairingFingerprint, PairingPin, PairingPreview, PairingVerific
 pub use registry::RuntimeRegistry;
 pub use traits::{CodraRuntime, EventStream};
 pub use types::*;
+pub use worker_store::WorkerStore;
