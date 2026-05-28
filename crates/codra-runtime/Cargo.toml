@@ -12,3 +12,4 @@ chrono = { workspace = true }
 uuid = { version = "1.7", features = ["v4", "fast-rng"] }
 async-trait = "0.1"
 futures = "0.3"
+sha2 = { workspace = true }
