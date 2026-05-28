@@ -1,4 +1,4 @@
-use crate::types::{StoredPairing, WorkerId};
+use crate::types::{StoredPairing, TrustLevel, WorkerId};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -94,6 +94,22 @@ impl WorkerStore {
         let mut wf = self.load();
         if let Some(worker) = wf.workers.iter_mut().find(|w| w.worker_id == *worker_id) {
             worker.last_seen = last_seen.into();
+            self.save(&wf)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Update the trust level for a registered worker.
+    pub fn update_trust_level(
+        &self,
+        worker_id: &WorkerId,
+        trust_level: TrustLevel,
+    ) -> Result<bool, String> {
+        let mut wf = self.load();
+        if let Some(worker) = wf.workers.iter_mut().find(|w| w.worker_id == *worker_id) {
+            worker.trust_level = trust_level;
             self.save(&wf)?;
             Ok(true)
         } else {
@@ -240,5 +256,26 @@ mod tests {
             assert_eq!(workers[0].worker_id.0, "wkr-001");
             assert_eq!(workers[1].worker_id.0, "wkr-002");
         }
+    }
+
+    #[test]
+    fn update_trust_level_works() {
+        let (store, _dir) = test_store();
+        store.add_worker(test_worker("wkr-001")).unwrap();
+        let updated = store
+            .update_trust_level(&WorkerId("wkr-001".to_string()), TrustLevel::Elevated)
+            .unwrap();
+        assert!(updated);
+        let worker = store.get_worker(&WorkerId("wkr-001".to_string())).unwrap();
+        assert_eq!(worker.trust_level, TrustLevel::Elevated);
+    }
+
+    #[test]
+    fn update_trust_level_nonexistent_returns_false() {
+        let (store, _dir) = test_store();
+        let updated = store
+            .update_trust_level(&WorkerId("ghost".to_string()), TrustLevel::Elevated)
+            .unwrap();
+        assert!(!updated);
     }
 }
