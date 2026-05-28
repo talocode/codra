@@ -1,7 +1,7 @@
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
-use codra_runtime::{StoredPairing, TrustLevel, WorkerId, WorkerStore};
+use codra_runtime::{StoredPairing, TrustLevel, WorkerHealth, WorkerId, WorkerStore};
 use codra_tools::design::load_design_system;
 use codra_tools::registry::builtin_tool_definitions;
 use std::env;
@@ -117,11 +117,13 @@ fn worker_command(args: &[String]) -> Result<(), String> {
     let sub = args.first().map(String::as_str).unwrap_or("help");
     match sub {
         "add" => worker_add(&args[1..]),
+        "check" | "probe" => worker_check(&args[1..]),
         "list" => worker_list(),
         "remove" => worker_remove(&args[1..]),
         _ => {
             println!("codra worker <command>");
             println!("  add <url> --fingerprint <pin-or-fingerprint>  Register a remote worker");
+            println!("  check|probe <worker_id>                      Probe worker health endpoint");
             println!("  list                                        List registered workers");
             println!("  remove <worker_id>                          Remove a registered worker");
             Ok(())
@@ -248,6 +250,108 @@ fn worker_remove(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+fn worker_check(args: &[String]) -> Result<(), String> {
+    let worker_id = args
+        .first()
+        .ok_or_else(|| "Usage: codra worker check <worker_id>".to_string())?;
+
+    let store = WorkerStore::new_global();
+    let worker = store
+        .get_worker(&WorkerId(worker_id.clone()))
+        .ok_or_else(|| format!("Worker '{}' not found in registry", worker_id))?;
+
+    let health_url = format!(
+        "http://{}:{}/api/workers/health",
+        worker.worker_host, worker.worker_port
+    );
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let resp = client.get(&health_url).send().map_err(|e| {
+        format!(
+            "Failed to reach worker '{}' at {}: {}",
+            worker_id, health_url, e
+        )
+    })?;
+
+    if !resp.status().is_success() {
+        return Err(format!(
+            "Worker '{}' at {} returned HTTP {}",
+            worker_id,
+            health_url,
+            resp.status()
+        ));
+    }
+
+    let health: WorkerHealth = resp.json().map_err(|e| {
+        format!(
+            "Malformed health response from worker '{}': {}",
+            worker_id, e
+        )
+    })?;
+
+    // Verify returned worker_id matches registration
+    if health.worker_id.0 != worker_id.clone() {
+        return Err(format!(
+            "Worker identity mismatch: expected '{}', responded with '{}'",
+            worker_id, health.worker_id.0
+        ));
+    }
+
+    // Update last_seen on successful probe
+    store
+        .update_last_seen(
+            &WorkerId(worker_id.clone()),
+            chrono::Utc::now().to_rfc3339(),
+        )
+        .map_err(|e| format!("Failed to update last_seen: {}", e))?;
+
+    println!("Worker health check: {}", worker_id);
+    println!("  status:              {}", health.status);
+    println!("  daemon version:      {}", health.version);
+    println!("  os / arch:           {} / {}", health.os, health.arch);
+    println!("  uptime:              {}s", health.uptime_seconds);
+    println!("  workspace mode:      {}", health.workspace_mode);
+    println!(
+        "  protocol version:    {}",
+        health.remote_worker_protocol_version
+    );
+    println!("  capabilities:");
+    println!(
+        "    task_execution:    {}",
+        yesno(health.capabilities.task_execution)
+    );
+    println!(
+        "    event_streaming:   {}",
+        yesno(health.capabilities.event_streaming)
+    );
+    println!(
+        "    remote_pairing:    {}",
+        yesno(health.capabilities.remote_pairing)
+    );
+    println!(
+        "    approval_fwd:      {}",
+        yesno(health.capabilities.approval_forwarding)
+    );
+    println!(
+        "    mdns_discovery:    {}",
+        yesno(health.capabilities.mdns_discovery)
+    );
+
+    Ok(())
+}
+
+fn yesno(v: bool) -> &'static str {
+    if v {
+        "yes"
+    } else {
+        "no"
+    }
+}
+
 /// Parse a URL like `http://192.168.1.100:8080` into (host, port).
 fn parse_worker_url(url: &str) -> Result<(String, u16), String> {
     let url = url
@@ -268,6 +372,7 @@ fn help() -> Result<(), String> {
     println!("  smoke             Validate local tool registry and workspace readiness");
     println!("  provider check    Check active provider health");
     println!("  worker add        Register a remote worker");
+    println!("  worker check      Probe a registered worker's health endpoint");
     println!("  worker list       List registered workers");
     println!("  worker remove     Remove a registered worker");
     println!("  headless <intent> Run a dry-run headless planning surface");
