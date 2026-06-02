@@ -1,3 +1,4 @@
+use codra_cli::run::{parse_run_args, run_task};
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
@@ -33,6 +34,10 @@ fn main() {
                 .unwrap_or_else(|| "Inspect workspace and report readiness.".to_string()),
         ),
         "mcp-server" => mcp_server(),
+        "run" => {
+            args.remove(0);
+            run_command(&args)
+        }
         _ => help(),
     };
 
@@ -516,8 +521,15 @@ fn parse_worker_url(url: &str) -> Result<(String, u16), String> {
     Ok((host, port))
 }
 
+fn run_command(args: &[String]) -> Result<(), String> {
+    let opts = parse_run_args(args)?;
+    run_task(opts)
+}
+
 fn help() -> Result<(), String> {
     println!("codra <command>");
+    println!("  run --task <task> [--jsonl]  Run a task with optional JSONL event stream");
+    println!("                               Tasks: review-pr, explain-issue, summarize-context");
     println!("  smoke             Validate local tool registry and workspace readiness");
     println!("  provider check    Check active provider health");
     println!("  worker add        Register a remote worker");
