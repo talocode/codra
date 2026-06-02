@@ -20,6 +20,8 @@ codra run --task review-pr
 
 ## GitHub context
 
+Real GitHub Actions mode is enabled only when `GITHUB_ACTIONS=true`. If `GITHUB_EVENT_PATH` is set outside Actions, the CLI parses it as a local fixture and keeps `mode` as `local`.
+
 Reads GitHub Actions environment variables when present:
 
 - `GITHUB_REPOSITORY`, `GITHUB_EVENT_NAME`, `GITHUB_EVENT_PATH`
@@ -41,7 +43,7 @@ With `--jsonl`, each line is a JSON object:
 | `codra.task.summary` | Deterministic task output |
 | `codra.task.completed` | Task finished |
 | `codra.run.completed` | Success |
-| `codra.run.failed` | Unrecoverable error |
+| `codra.run.failed` | Unrecoverable error (including invalid `--task` when `--jsonl` is set) |
 | `codra.warning` | Non-fatal issue |
 
 Fields: `type`, `runId`, `timestamp`, `task`, `source`, `data`.
