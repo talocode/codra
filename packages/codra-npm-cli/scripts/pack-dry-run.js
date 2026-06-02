@@ -13,8 +13,26 @@ const EXPECTED_NATIVE = SUPPORTED_PLATFORM_KEYS.map((key) => {
   return `bin/native/${key}/${name}`;
 });
 
+function expectedNativePaths() {
+  if (process.env.CODRA_EXPECT_PLATFORMS) {
+    const keys = process.env.CODRA_EXPECT_PLATFORMS.split(',')
+      .map((key) => key.trim())
+      .filter(Boolean);
+    return keys.map((key) => {
+      const name = key.startsWith('win32') ? 'codra.exe' : 'codra';
+      return `bin/native/${key}/${name}`;
+    });
+  }
+
+  if (process.env.CODRA_EXPECT_ALL_PLATFORMS === '1') {
+    return EXPECTED_NATIVE;
+  }
+
+  return [];
+}
+
 function main() {
-  const expectAll = process.env.CODRA_EXPECT_ALL_PLATFORMS === '1';
+  const expectedNative = expectedNativePaths();
 
   const output = execSync('npm pack --dry-run 2>&1', {
     cwd: packageRoot,
@@ -23,7 +41,9 @@ function main() {
     shell: true,
     env: {
       ...process.env,
-      CODRA_USE_ARTIFACTS: process.env.CODRA_USE_ARTIFACTS || (expectAll ? '1' : process.env.CODRA_USE_ARTIFACTS),
+      CODRA_USE_ARTIFACTS:
+        process.env.CODRA_USE_ARTIFACTS ||
+        (expectedNative.length > 0 ? '1' : process.env.CODRA_USE_ARTIFACTS),
     },
   });
 
@@ -54,11 +74,9 @@ function main() {
     errors.push('no bin/native/<platform>-<arch>/ binary in pack (run npm run build first)');
   }
 
-  if (expectAll) {
-    for (const expected of EXPECTED_NATIVE) {
-      if (!fileLines.includes(expected)) {
-        errors.push(`missing release binary: ${expected}`);
-      }
+  for (const expected of expectedNative) {
+    if (!fileLines.includes(expected)) {
+      errors.push(`missing release binary: ${expected}`);
     }
   }
 

@@ -60,16 +60,19 @@ npm run build:from-artifacts
 ```
 
 - Fails if any artifact is missing (default).
-- Set `CODRA_ALLOW_PARTIAL_BINARIES=1` to package only available artifacts (local testing).
+- Set `CODRA_ALLOW_PARTIAL_BINARIES=1` to package only available artifacts (local testing or CI dry runs).
 
 ### Manual GitHub Actions release
 
 Workflow: [`.github/workflows/codra-cli-release.yml`](../../.github/workflows/codra-cli-release.yml)
 
 - Trigger: **workflow_dispatch** only (not automatic on push).
-- Builds matrix: linux-x64, linux-arm64, darwin-x64, darwin-arm64, win32-x64.
-- Job `package-npm`: downloads artifacts, runs `build:from-artifacts`, `npm test`, `npm pack`, uploads tarball.
-- **npm publish is disabled by default.** Set workflow input `publish: true` and configure `NPM_TOKEN` secret to publish.
+- **Always builds:** linux-x64, linux-arm64, darwin-arm64, win32-x64.
+- **Optional:** darwin-x64 (Intel macOS) when `include_darwin_x64: true`. Off by default because `macos-13` runner availability can be slow and block the workflow.
+- Job `package-npm` runs after the selected matrix finishes (it does not wait for darwin-x64 when that input is false).
+- **Dry run (`publish: false`):** may package partial binaries (`CODRA_ALLOW_PARTIAL_BINARIES=1`) so tarball verification is not blocked by one scarce runner.
+- **Real publish (`publish: true`):** requires every platform in the selected matrix unless `allow_partial_binaries: true` is set explicitly. `NPM_TOKEN` secret is required; the publish step is skipped when `publish: false`.
+- Recommended dry-run dispatch: `publish=false`, `include_darwin_x64=false`.
 
 ## Local vs release packaging
 
@@ -86,11 +89,11 @@ When ready to publish (maintainers only):
 1. Run **Codra CLI release** workflow (or supply all artifacts locally).
 2. `npm login` (only if publishing manually).
 3. `npm test`
-4. `CODRA_EXPECT_ALL_PLATFORMS=1 npm run pack:dry`
-5. Verify tarball lists all five `bin/native/<platform>/` binaries.
+4. `CODRA_EXPECT_PLATFORMS=linux-x64,linux-arm64,darwin-arm64,win32-x64 npm run pack:dry` (add `darwin-x64` when Intel macOS is included).
+5. Verify tarball lists every required `bin/native/<platform>/` binary.
 6. Publish via workflow with `publish: true` **or** `npm publish --access public` (guarded).
 
-Do not publish until all target binaries are included unless intentionally shipping a preview.
+Do not publish until all required target binaries are included unless intentionally shipping a preview with `allow_partial_binaries: true`.
 
 ## Supported commands
 
