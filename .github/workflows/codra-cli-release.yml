@@ -7,35 +7,77 @@ on:
         description: Publish @codra/cli to npm (requires NPM_TOKEN secret)
         type: boolean
         default: false
+      include_darwin_x64:
+        description: Include Intel macOS darwin-x64 build (macos-13; can queue for a long time)
+        type: boolean
+        default: false
+      allow_partial_binaries:
+        description: Package only available artifacts. Dry runs (publish=false) allow partial by default; publish=true requires full set unless this is true
+        type: boolean
+        default: false
 
 jobs:
+  resolve-matrix:
+    name: Resolve release matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      expected_platforms: ${{ steps.set-matrix.outputs.expected_platforms }}
+      allow_partial: ${{ steps.set-matrix.outputs.allow_partial }}
+      expect_all_pack: ${{ steps.set-matrix.outputs.expect_all_pack }}
+    steps:
+      - name: Compute matrix and packaging policy
+        id: set-matrix
+        env:
+          INCLUDE_DARWIN_X64: ${{ inputs.include_darwin_x64 }}
+          PUBLISH: ${{ inputs.publish }}
+          ALLOW_PARTIAL_BINARIES: ${{ inputs.allow_partial_binaries }}
+        run: |
+          python3 <<'PY'
+          import json
+          import os
+
+          include_darwin_x64 = os.environ.get("INCLUDE_DARWIN_X64", "false").lower() == "true"
+          publish = os.environ.get("PUBLISH", "false").lower() == "true"
+          allow_partial_input = os.environ.get("ALLOW_PARTIAL_BINARIES", "false").lower() == "true"
+
+          matrix_include = [
+              {"target": "linux-x64", "os": "ubuntu-latest", "artifact": "codra-linux-x64", "bin_name": "codra"},
+              {"target": "linux-arm64", "os": "ubuntu-24.04-arm", "artifact": "codra-linux-arm64", "bin_name": "codra"},
+              {"target": "darwin-arm64", "os": "macos-14", "artifact": "codra-darwin-arm64", "bin_name": "codra"},
+              {"target": "win32-x64", "os": "windows-latest", "artifact": "codra-win32-x64.exe", "bin_name": "codra.exe"},
+          ]
+          if include_darwin_x64:
+              matrix_include.append(
+                  {
+                      "target": "darwin-x64",
+                      "os": "macos-13",
+                      "artifact": "codra-darwin-x64",
+                      "bin_name": "codra",
+                  }
+              )
+
+          platforms = [entry["target"] for entry in matrix_include]
+          # publish=false dry runs may package partial binaries; publish=true requires full set unless opted in
+          allow_partial = (not publish) or allow_partial_input
+          expect_all_pack = publish and (not allow_partial_input)
+
+          github_output = os.environ["GITHUB_OUTPUT"]
+          with open(github_output, "a", encoding="utf-8") as handle:
+              handle.write(f"matrix={json.dumps({'include': matrix_include})}\n")
+              handle.write(f"expected_platforms={','.join(platforms)}\n")
+              handle.write(f"allow_partial={'1' if allow_partial else '0'}\n")
+              handle.write(f"expect_all_pack={'1' if expect_all_pack else '0'}\n")
+          PY
+
   build-binaries:
     name: build ${{ matrix.target }}
+    needs: resolve-matrix
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - target: linux-x64
-            os: ubuntu-latest
-            artifact: codra-linux-x64
-            bin_name: codra
-          - target: linux-arm64
-            os: ubuntu-24.04-arm
-            artifact: codra-linux-arm64
-            bin_name: codra
-          - target: darwin-x64
-            os: macos-13
-            artifact: codra-darwin-x64
-            bin_name: codra
-          - target: darwin-arm64
-            os: macos-14
-            artifact: codra-darwin-arm64
-            bin_name: codra
-          - target: win32-x64
-            os: windows-latest
-            artifact: codra-win32-x64.exe
-            bin_name: codra.exe
+      matrix: ${{ fromJSON(needs.resolve-matrix.outputs.matrix) }}
 
     steps:
       - name: Check out repository
@@ -67,7 +109,7 @@ jobs:
 
   package-npm:
     name: Package @codra/cli npm tarball
-    needs: build-binaries
+    needs: [resolve-matrix, build-binaries]
     runs-on: ubuntu-latest
 
     steps:
@@ -91,6 +133,7 @@ jobs:
         env:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+          CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
         run: npm run build:from-artifacts
 
       - name: Test npm wrapper
@@ -100,7 +143,7 @@ jobs:
       - name: Validate npm pack contents
         working-directory: packages/codra-npm-cli
         env:
-          CODRA_EXPECT_ALL_PLATFORMS: '1'
+          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expect_all_pack == '1' && needs.resolve-matrix.outputs.expected_platforms || '' }}
         run: npm run pack:dry
 
       - name: Build npm tarball (no publish)
@@ -108,6 +151,7 @@ jobs:
         env:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+          CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
         run: npm pack
 
       - name: Upload npm tarball artifact
@@ -124,9 +168,14 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+          CODRA_ALLOW_PARTIAL_BINARIES: ${{ inputs.allow_partial_binaries == true && '1' || '' }}
+          CODRA_EXPECT_PLATFORMS: ${{ inputs.allow_partial_binaries != true && needs.resolve-matrix.outputs.expected_platforms || '' }}
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
             echo "NPM_TOKEN secret is required when publish=true"
             exit 1
+          fi
+          if [ "${{ inputs.allow_partial_binaries }}" != "true" ]; then
+            CODRA_ALLOW_PARTIAL_BINARIES=0 node scripts/build-platform-binaries.js
           fi
           npm publish --access public
