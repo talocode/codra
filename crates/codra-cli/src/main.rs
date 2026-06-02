@@ -1,4 +1,4 @@
-use codra_cli::run::{parse_run_args, run_task};
+use codra_cli::run::{args_want_jsonl, execute_run};
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
@@ -36,7 +36,15 @@ fn main() {
         "mcp-server" => mcp_server(),
         "run" => {
             args.remove(0);
-            run_command(&args)
+            match execute_run(&args) {
+                Ok(()) => Ok(()),
+                Err(err) => {
+                    if args_want_jsonl(&args) {
+                        std::process::exit(1);
+                    }
+                    Err(err)
+                }
+            }
         }
         _ => help(),
     };
@@ -519,11 +527,6 @@ fn parse_worker_url(url: &str) -> Result<(String, u16), String> {
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(80);
     Ok((host, port))
-}
-
-fn run_command(args: &[String]) -> Result<(), String> {
-    let opts = parse_run_args(args)?;
-    run_task(opts)
 }
 
 fn help() -> Result<(), String> {

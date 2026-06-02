@@ -1,5 +1,4 @@
-use codra_cli::parse_run_args;
-use codra_cli::VALID_TASKS;
+use codra_cli::{parse_run_args, peek_task_label, VALID_TASKS};
 
 #[test]
 fn parses_task_and_jsonl_flag() {
@@ -21,4 +20,15 @@ fn rejects_invalid_task() {
     for t in VALID_TASKS {
         assert!(err.contains(t));
     }
+}
+
+#[test]
+fn peek_task_label_unknown_when_missing() {
+    assert_eq!(peek_task_label(&[]), "unknown");
+}
+
+#[test]
+fn peek_task_label_reads_invalid_task_name() {
+    let args = vec!["--task".to_string(), "not-a-task".to_string(), "--jsonl".to_string()];
+    assert_eq!(peek_task_label(&args), "not-a-task");
 }

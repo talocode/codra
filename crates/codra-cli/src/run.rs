@@ -15,6 +15,56 @@ pub struct RunOptions {
     pub jsonl: bool,
 }
 
+pub fn args_want_jsonl(args: &[String]) -> bool {
+    args.iter().any(|a| a == "--jsonl")
+}
+
+/// Task name from `--task` if present; otherwise `"unknown"`.
+pub fn peek_task_label(args: &[String]) -> String {
+    let mut i = 0;
+    while i < args.len() {
+        if args[i] == "--task" {
+            return args
+                .get(i + 1)
+                .cloned()
+                .filter(|t| !t.is_empty())
+                .unwrap_or_else(|| "unknown".to_string());
+        }
+        i += 1;
+    }
+    "unknown".to_string()
+}
+
+pub fn emit_argument_validation_failed(task: &str, error: &str) -> Result<(), String> {
+    let run_id = new_run_id();
+    let safe = crate::utils::safe_error::redact_secrets(error);
+    let emitter = EventEmitter::new(run_id, task.to_string(), true);
+    emitter.emit(
+        "codra.run.failed",
+        json!({
+            "error": safe,
+            "stage": "argument_validation",
+            "secretsExposed": false
+        }),
+    )
+}
+
+/// Parse and run a task, emitting `codra.run.failed` for JSONL argument validation errors.
+pub fn execute_run(args: &[String]) -> Result<(), String> {
+    let jsonl = args_want_jsonl(args);
+    let task_label = peek_task_label(args);
+
+    match parse_run_args(args) {
+        Ok(opts) => run_task(opts),
+        Err(err) => {
+            if jsonl {
+                emit_argument_validation_failed(&task_label, &err)?;
+            }
+            Err(err)
+        }
+    }
+}
+
 pub fn parse_run_args(args: &[String]) -> Result<RunOptions, String> {
     let mut task: Option<String> = None;
     let mut jsonl = false;

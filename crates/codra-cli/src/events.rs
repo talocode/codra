@@ -102,7 +102,8 @@ impl EventEmitter {
             "codra.run.failed" => {
                 let msg = event
                     .data
-                    .get("message")
+                    .get("error")
+                    .or_else(|| event.data.get("message"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown error");
                 eprintln!("✗ Run failed: {msg}");

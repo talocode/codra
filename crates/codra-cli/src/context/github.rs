@@ -13,6 +13,11 @@ use super::types::{
 };
 use super::local_git::load_local_git;
 
+/// True only when running in a real GitHub Actions job (`GITHUB_ACTIONS=true`).
+pub fn github_actions_runtime_enabled() -> bool {
+    env::var("GITHUB_ACTIONS").ok().as_deref() == Some("true")
+}
+
 const API_TIMEOUT_SECS: u64 = 15;
 const MAX_CHANGED_FILES: usize = 100;
 const MAX_PATCH_LEN: usize = 32_000;
@@ -45,8 +50,7 @@ pub fn load_github_context() -> CodraGitHubContext {
         }
     }
 
-    let in_actions = env::var("GITHUB_ACTIONS").ok().as_deref() == Some("true")
-        || ctx.event_path.is_some();
+    let in_actions = github_actions_runtime_enabled();
 
     if in_actions {
         ctx.mode = GitHubContextMode::GitHubActions;
@@ -55,6 +59,16 @@ pub fn load_github_context() -> CodraGitHubContext {
     } else {
         ctx.warnings
             .push("not running inside GitHub Actions; GitHub event context unavailable".to_string());
+        if ctx.event_path.is_some() {
+            ctx.warnings.push(
+                "GITHUB_EVENT_PATH detected outside GitHub Actions; treating as local fixture context."
+                    .to_string(),
+            );
+            parse_event_payload(&mut ctx);
+            if ctx.pull_request.is_some() || ctx.issue.is_some() {
+                ctx.available = true;
+            }
+        }
     }
 
     let token = env::var("GITHUB_TOKEN").ok().filter(|t| !t.is_empty());
