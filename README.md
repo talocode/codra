@@ -103,6 +103,17 @@ codra run --task summarize-context
 
 See [crates/codra-cli/README.md](crates/codra-cli/README.md).
 
+## Installable CLI roadmap
+
+The Rust CLI will be installable globally via npm (not published yet):
+
+```bash
+npm install -g @codra/cli   # coming soon
+codra run --task summarize-context --jsonl
+```
+
+The [`@codra/cli`](packages/codra-npm-cli/) package is a thin Node wrapper that spawns the native `codra` binary built from `codra-cli`. For local development, see [packages/codra-npm-cli/README.md](packages/codra-npm-cli/README.md).
+
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the full phased roadmap.

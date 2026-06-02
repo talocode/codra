@@ -1,0 +1,31 @@
+{
+  "name": "@codra/cli",
+  "version": "0.1.0",
+  "description": "Codra CLI for local-first AI coding agent workflows",
+  "license": "MIT",
+  "author": "Talocode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talocode/codra",
+    "directory": "packages/codra-npm-cli"
+  },
+  "bin": {
+    "codra": "./bin/codra.js"
+  },
+  "files": [
+    "bin/",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
