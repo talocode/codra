@@ -3,11 +3,16 @@ name = "codra-cli"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "codra_cli"
+path = "src/lib.rs"
+
 [[bin]]
 name = "codra"
 path = "src/main.rs"
 
 [dependencies]
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 codra-core = { path = "../codra-core" }
 codra-protocol = { path = "../codra-protocol" }

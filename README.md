@@ -89,6 +89,20 @@ cargo check
 cargo test
 ```
 
+## Codra CLI (event protocol + GitHub context)
+
+```bash
+cargo build -p codra-cli
+
+# JSONL agent run events (no AI provider keys required)
+codra run --task review-pr --jsonl
+codra run --task summarize-context
+
+# Optional: GITHUB_TOKEN enriches PR/issue data via GitHub API
+```
+
+See [crates/codra-cli/README.md](crates/codra-cli/README.md).
+
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the full phased roadmap.

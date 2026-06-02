@@ -1,0 +1,15 @@
+{
+  "action": "opened",
+  "number": 42,
+  "pull_request": {
+    "number": 42,
+    "title": "feat: example PR",
+    "body": "Implements example changes for testing.",
+    "user": { "login": "octocat" },
+    "base": { "ref": "main" },
+    "head": { "ref": "feat/example" }
+  },
+  "repository": {
+    "full_name": "talocode/codra"
+  }
+}
