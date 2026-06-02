@@ -2,6 +2,11 @@ node_modules
 .DS_Store
 *.log
 
+# Local secrets (never commit)
+.env
+.env.*
+!.env.example
+
 # Rust
 target/
 **/*.rs.bk

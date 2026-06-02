@@ -143,6 +143,9 @@ jobs:
       - name: Validate npm pack contents
         working-directory: packages/codra-npm-cli
         env:
+          CODRA_USE_ARTIFACTS: '1'
+          CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+          CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
           CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expect_all_pack == '1' && needs.resolve-matrix.outputs.expected_platforms || '' }}
         run: npm run pack:dry
 
@@ -152,6 +155,7 @@ jobs:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
           CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
+          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expect_all_pack == '1' && needs.resolve-matrix.outputs.expected_platforms || '' }}
         run: npm pack
 
       - name: Upload npm tarball artifact

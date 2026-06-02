@@ -31,6 +31,26 @@ function expectedNativePaths() {
   return [];
 }
 
+function packagingEnv(expectedNative) {
+  const env = { ...process.env };
+  const passthrough = [
+    'CODRA_USE_ARTIFACTS',
+    'CODRA_ARTIFACTS_DIR',
+    'CODRA_ALLOW_PARTIAL_BINARIES',
+    'CODRA_EXPECT_PLATFORMS',
+    'CODRA_EXPECT_ALL_PLATFORMS',
+  ];
+  for (const key of passthrough) {
+    if (process.env[key] !== undefined) {
+      env[key] = process.env[key];
+    }
+  }
+  if (!env.CODRA_USE_ARTIFACTS && expectedNative.length > 0) {
+    env.CODRA_USE_ARTIFACTS = '1';
+  }
+  return env;
+}
+
 function main() {
   const expectedNative = expectedNativePaths();
 
@@ -39,12 +59,7 @@ function main() {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: true,
-    env: {
-      ...process.env,
-      CODRA_USE_ARTIFACTS:
-        process.env.CODRA_USE_ARTIFACTS ||
-        (expectedNative.length > 0 ? '1' : process.env.CODRA_USE_ARTIFACTS),
-    },
+    env: packagingEnv(expectedNative),
   });
 
   const lines = output.split('\n');
