@@ -112,7 +112,7 @@ npm install -g @codra/cli   # coming soon
 codra run --task summarize-context --jsonl
 ```
 
-The [`@codra/cli`](packages/codra-npm-cli/) package is a thin Node wrapper that spawns the native `codra` binary built from `codra-cli`. For local development, see [packages/codra-npm-cli/README.md](packages/codra-npm-cli/README.md).
+The [`@codra/cli`](packages/codra-npm-cli/) package is a thin Node wrapper that spawns the native `codra` binary built from `codra-cli`. Local `npm run build` packages only the current platform binary; multi-platform npm releases need a release workflow (see [packages/codra-npm-cli/README.md](packages/codra-npm-cli/README.md)).
 
 ## Roadmap
 
