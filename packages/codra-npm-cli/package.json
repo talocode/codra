@@ -20,7 +20,8 @@
   "scripts": {
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "pack:dry": "npm pack --dry-run"
+    "prepack": "node scripts/build.js",
+    "pack:dry": "node scripts/pack-dry-run.js"
   },
   "publishConfig": {
     "access": "public"

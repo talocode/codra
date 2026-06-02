@@ -5,37 +5,78 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const SUPPORTED_PLATFORMS = new Set([
-  'linux-arm64',
+const PLANNED_PLATFORMS = [
   'linux-x64',
-  'darwin-arm64',
+  'linux-arm64',
   'darwin-x64',
+  'darwin-arm64',
   'win32-x64',
-]);
+];
 
 function platformArchKey() {
-  const platform = process.platform;
-  const arch = process.arch;
-  return `${platform}-${arch}`;
+  return `${process.platform}-${process.arch}`;
 }
 
-function binaryFileName() {
-  return process.platform === 'win32' ? 'codra.exe' : 'codra';
+function binaryFileName(platformKey) {
+  return platformKey && platformKey.startsWith('win32') ? 'codra.exe' : 'codra';
+}
+
+function nativeBinaryPath(platformKey) {
+  const name = binaryFileName(platformKey);
+  return path.join(__dirname, 'native', platformKey, name);
+}
+
+function listInstalledBinaryPaths() {
+  const nativeRoot = path.join(__dirname, 'native');
+  if (!fs.existsSync(nativeRoot)) {
+    return [];
+  }
+
+  const installed = [];
+  for (const entry of fs.readdirSync(nativeRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const key = entry.name;
+    const candidate = nativeBinaryPath(key);
+    if (fs.existsSync(candidate)) {
+      installed.push(candidate);
+    }
+  }
+  return installed.sort();
+}
+
+function reportMissingBinary(requestedKey) {
+  const expected = nativeBinaryPath(requestedKey);
+  const installed = listInstalledBinaryPaths();
+
+  process.stderr.write(
+    `Codra CLI binary is not available for ${requestedKey} in this package.\n` +
+      `Expected path: ${expected}\n` +
+      `Planned release targets: ${PLANNED_PLATFORMS.join(', ')}\n`,
+  );
+
+  if (installed.length > 0) {
+    process.stderr.write('Binaries included in this package:\n');
+    for (const p of installed) {
+      process.stderr.write(`  - ${p}\n`);
+    }
+  } else {
+    process.stderr.write(
+      'No native binaries are bundled. Run: npm run build (from packages/codra-npm-cli)\n',
+    );
+  }
+
+  process.stderr.write(
+    'Public npm installs require a release-built binary for your platform. ' +
+      'This tarball currently ships only binaries built on the publishing machine.\n',
+  );
 }
 
 function resolveNativeBinary() {
   const key = platformArchKey();
-  const name = binaryFileName();
-  const nativePath = path.join(__dirname, 'native', key, name);
+  const nativePath = nativeBinaryPath(key);
 
   if (!fs.existsSync(nativePath)) {
-    const supported = [...SUPPORTED_PLATFORMS].sort().join(', ');
-    process.stderr.write(
-      `codra: native binary not found for ${key}.\n` +
-        `Expected: ${nativePath}\n` +
-        `Supported platform keys (when built): ${supported}\n` +
-        `Build the package for this machine: npm run build (from packages/codra-npm-cli)\n`,
-    );
+    reportMissingBinary(key);
     process.exit(1);
   }
 

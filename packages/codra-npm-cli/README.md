@@ -2,18 +2,18 @@
 
 npm package wrapper for the [Codra](https://github.com/talocode/codra) Rust CLI (`codra-cli` crate). Installs a global `codra` command that forwards to the native binary for your platform.
 
-## Installation (coming soon)
+**Status: not published to npm yet.**
 
-This package is **not published to npm yet**. When it is:
+## Installation (coming soon)
 
 ```bash
 npm install -g @codra/cli
 codra --help
 ```
 
-## Local development
+Until the package is published, use [local development](#local-development) below.
 
-From the monorepo root (or this package directory):
+## Local development
 
 ```bash
 cd packages/codra-npm-cli
@@ -23,7 +23,43 @@ node bin/codra.js run --task summarize-context --jsonl
 npm test
 ```
 
-`npm run build` runs `cargo build -p codra-cli --release` and copies the release binary into `bin/native/<platform>-<arch>/`.
+`npm run build` runs `cargo build -p codra-cli --release` and copies the release binary into `bin/native/<platform>-<arch>/` for **the current machine only** (for example `linux-arm64` on this host).
+
+## Current limitation
+
+- A local `npm run build` packages **only the current platform/arch** binary.
+- `npm pack` / `npm publish` run `prepack`, which rebuilds and copies that same host binary into the tarball.
+- End users on other platforms will see a clear error until release-built binaries for their OS/arch are included.
+- Real public npm publishing needs release-built binaries for each supported target (see [Multi-platform release plan](#multi-platform-release-plan)).
+
+This package does **not** ship multi-platform binaries today.
+
+## Publishing checklist
+
+When ready to publish (maintainers only):
+
+1. `npm login`
+2. `npm run build` — release Rust binary for this host
+3. `npm test`
+4. `npm run pack:dry` — verify tarball contents (runs `prepack` + dry-run checks)
+5. Confirm tarball includes `README.md`, `package.json`, `bin/codra.js`, and `bin/native/<platform>-<arch>/codra` only
+6. `npm publish --access public`
+
+Do not publish until multi-platform release binaries are available for your intended audience, unless you are intentionally shipping a single-platform preview.
+
+## Multi-platform release plan
+
+Future release workflow should build and bundle:
+
+| Target | Binary path |
+|--------|-------------|
+| `linux-x64` | `bin/native/linux-x64/codra` |
+| `linux-arm64` | `bin/native/linux-arm64/codra` |
+| `darwin-x64` | `bin/native/darwin-x64/codra` |
+| `darwin-arm64` | `bin/native/darwin-arm64/codra` |
+| `win32-x64` | `bin/native/win32-x64/codra.exe` |
+
+Automation (GitHub Actions or similar) is not implemented yet.
 
 ## Supported commands
 
@@ -38,8 +74,6 @@ codra run --task summarize-context --jsonl
 Invalid tasks exit non-zero. With `--jsonl`, failures emit `codra.run.failed`.
 
 ## GitHub context (optional)
-
-When running in GitHub Actions or with fixtures:
 
 | Variable | Purpose |
 |----------|---------|
