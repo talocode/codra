@@ -1,18 +1,30 @@
 'use strict';
 
 const { execSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
 const packageRoot = path.resolve(__dirname, '..');
-const forbidden = [/^node_modules\//, /^target\//, /\.env$/, /^scripts\//];
+const { SUPPORTED_PLATFORM_KEYS } = require('../bin/codra-lib');
+
+const forbidden = [/^node_modules\//, /^target\//, /^artifacts\//, /\.env$/, /^scripts\//];
+
+const EXPECTED_NATIVE = SUPPORTED_PLATFORM_KEYS.map((key) => {
+  const name = key.startsWith('win32') ? 'codra.exe' : 'codra';
+  return `bin/native/${key}/${name}`;
+});
 
 function main() {
+  const expectAll = process.env.CODRA_EXPECT_ALL_PLATFORMS === '1';
+
   const output = execSync('npm pack --dry-run 2>&1', {
     cwd: packageRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: true,
+    env: {
+      ...process.env,
+      CODRA_USE_ARTIFACTS: process.env.CODRA_USE_ARTIFACTS || (expectAll ? '1' : process.env.CODRA_USE_ARTIFACTS),
+    },
   });
 
   const lines = output.split('\n');
@@ -42,6 +54,14 @@ function main() {
     errors.push('no bin/native/<platform>-<arch>/ binary in pack (run npm run build first)');
   }
 
+  if (expectAll) {
+    for (const expected of EXPECTED_NATIVE) {
+      if (!fileLines.includes(expected)) {
+        errors.push(`missing release binary: ${expected}`);
+      }
+    }
+  }
+
   if (errors.length > 0) {
     console.error('[pack-dry-run] failed:');
     for (const err of errors) {
@@ -51,7 +71,7 @@ function main() {
   }
 
   console.log('[pack-dry-run] ok');
-  console.log(`[pack-dry-run] native binaries: ${nativeBins.join(', ')}`);
+  console.log(`[pack-dry-run] native binaries (${nativeBins.length}): ${nativeBins.join(', ')}`);
   process.stdout.write(output);
 }
 

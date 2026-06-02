@@ -1,0 +1,132 @@
+name: Codra CLI release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish @codra/cli to npm (requires NPM_TOKEN secret)
+        type: boolean
+        default: false
+
+jobs:
+  build-binaries:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x64
+            os: ubuntu-latest
+            artifact: codra-linux-x64
+            bin_name: codra
+          - target: linux-arm64
+            os: ubuntu-24.04-arm
+            artifact: codra-linux-arm64
+            bin_name: codra
+          - target: darwin-x64
+            os: macos-13
+            artifact: codra-darwin-x64
+            bin_name: codra
+          - target: darwin-arm64
+            os: macos-14
+            artifact: codra-darwin-arm64
+            bin_name: codra
+          - target: win32-x64
+            os: windows-latest
+            artifact: codra-win32-x64.exe
+            bin_name: codra.exe
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build codra-cli release binary
+        run: cargo build -p codra-cli --release
+
+      - name: Stage platform artifact (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          install -m 755 target/release/${{ matrix.bin_name }} "${{ matrix.artifact }}"
+
+      - name: Stage platform artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item target/release/${{ matrix.bin_name }} -Destination ${{ matrix.artifact }}
+
+      - name: Upload platform artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error
+
+  package-npm:
+    name: Package @codra/cli npm tarball
+    needs: build-binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download release binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: packages/codra-npm-cli/artifacts
+          pattern: codra-*
+          merge-multiple: true
+
+      - name: Package native binaries from artifacts
+        working-directory: packages/codra-npm-cli
+        env:
+          CODRA_USE_ARTIFACTS: '1'
+          CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+        run: npm run build:from-artifacts
+
+      - name: Test npm wrapper
+        working-directory: packages/codra-npm-cli
+        run: npm test
+
+      - name: Validate npm pack contents
+        working-directory: packages/codra-npm-cli
+        env:
+          CODRA_EXPECT_ALL_PLATFORMS: '1'
+        run: npm run pack:dry
+
+      - name: Build npm tarball (no publish)
+        working-directory: packages/codra-npm-cli
+        env:
+          CODRA_USE_ARTIFACTS: '1'
+          CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+        run: npm pack
+
+      - name: Upload npm tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codra-cli-npm-tarball
+          path: packages/codra-npm-cli/codra-cli-*.tgz
+          if-no-files-found: error
+
+      - name: Publish to npm (guarded)
+        if: inputs.publish == true
+        working-directory: packages/codra-npm-cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CODRA_USE_ARTIFACTS: '1'
+          CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN secret is required when publish=true"
+            exit 1
+          fi
+          npm publish --access public
