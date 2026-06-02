@@ -45,18 +45,36 @@ function installedNativePlatformKeys() {
   });
 }
 
+function expectedPlatformKeys() {
+  if (!process.env.CODRA_EXPECT_PLATFORMS) {
+    return [];
+  }
+
+  return process.env.CODRA_EXPECT_PLATFORMS.split(',')
+    .map((key) => key.trim())
+    .filter(Boolean);
+}
+
+function hasExpectedNativeBinaries() {
+  const expected = expectedPlatformKeys();
+  const installed = installedNativePlatformKeys();
+  if (expected.length === 0) {
+    return installed.length > 0;
+  }
+  return expected.every((key) => installed.includes(key));
+}
+
 function shouldSkipArtifactRebuild() {
   if (!shouldUseArtifacts()) {
     return false;
   }
 
-  const installed = installedNativePlatformKeys();
-  if (installed.length === 0) {
+  if (installedNativePlatformKeys().length === 0) {
     return false;
   }
 
-  // CI already ran build:from-artifacts; avoid a strict second pass during partial dry runs.
-  if (process.env.CODRA_ALLOW_PARTIAL_BINARIES === '1') {
+  // CI already ran build:from-artifacts; skip only when every expected selected platform is present.
+  if (process.env.CODRA_ALLOW_PARTIAL_BINARIES === '1' && hasExpectedNativeBinaries()) {
     return true;
   }
 
