@@ -134,11 +134,21 @@ jobs:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
           CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
+          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expected_platforms }}
         run: npm run build:from-artifacts
 
       - name: Test npm wrapper
         working-directory: packages/codra-npm-cli
+        env:
+          CODRA_USE_ARTIFACTS: '1'
         run: npm test
+
+      - name: List release packaging inputs
+        run: |
+          echo "artifacts download path:"
+          find packages/codra-npm-cli/artifacts -maxdepth 3 -type f -print || true
+          echo "bin/native before pack:"
+          find packages/codra-npm-cli/bin/native -maxdepth 3 -type f -print || true
 
       - name: Validate npm pack contents
         working-directory: packages/codra-npm-cli
@@ -146,7 +156,7 @@ jobs:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
           CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
-          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expect_all_pack == '1' && needs.resolve-matrix.outputs.expected_platforms || '' }}
+          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expected_platforms }}
         run: npm run pack:dry
 
       - name: Build npm tarball (no publish)
@@ -155,7 +165,7 @@ jobs:
           CODRA_USE_ARTIFACTS: '1'
           CODRA_ARTIFACTS_DIR: ${{ github.workspace }}/packages/codra-npm-cli/artifacts
           CODRA_ALLOW_PARTIAL_BINARIES: ${{ needs.resolve-matrix.outputs.allow_partial }}
-          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expect_all_pack == '1' && needs.resolve-matrix.outputs.expected_platforms || '' }}
+          CODRA_EXPECT_PLATFORMS: ${{ needs.resolve-matrix.outputs.expected_platforms }}
         run: npm pack
 
       - name: Upload npm tarball artifact

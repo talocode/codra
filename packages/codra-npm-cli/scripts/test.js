@@ -82,6 +82,11 @@ function testPlatformHelpers() {
 }
 
 function testArtifactPackaging() {
+  if (process.env.CODRA_USE_ARTIFACTS === '1') {
+    console.log('[test] skip artifact packaging layout test (release artifact mode)');
+    return;
+  }
+
   const tmpArtifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'codra-artifacts-'));
   const hostBinary = lib.resolveNativeBinary();
 
