@@ -8,6 +8,17 @@ Local-first Codra CLI with JSONL event protocol and GitHub context adapter.
 # Build
 cargo build -p codra-cli
 
+# Codex-style terminal entrypoint
+codra
+codra --help
+
+# Project setup and environment checks
+codra init
+codra init --force
+codra init --dry-run
+codra doctor
+codra doctor --json
+
 # JSONL event stream (no AI keys required)
 codra run --task review-pr --jsonl
 codra run --task explain-issue --jsonl
@@ -17,6 +28,10 @@ codra run --task summarize-context --jsonl
 codra run --task summarize-context
 codra run --task review-pr
 ```
+
+`codra init` creates `CODRA.md`, `.codra/commands/`, and `.codra/agents/` starter files at the git root when available. It does not overwrite existing files unless `--force` is passed.
+
+`codra doctor` checks git, cargo, Node, npm/pnpm, GitHub Actions environment, `GITHUB_TOKEN` presence without printing the value, Codra project files, the `codra` binary on `PATH`, and the npm platform key. Missing optional tools are warnings and exit 0.
 
 ## GitHub context
 

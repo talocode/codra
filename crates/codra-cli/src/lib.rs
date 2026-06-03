@@ -1,7 +1,11 @@
 pub mod context;
+pub mod doctor;
 pub mod events;
+pub mod init;
+pub mod project;
 pub mod run;
 pub mod tasks;
+pub mod terminal;
 pub mod utils;
 
 pub use run::{

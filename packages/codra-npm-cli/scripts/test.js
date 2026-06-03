@@ -155,6 +155,12 @@ function main() {
   const help = run(['--help']);
   assertIncludes(help.stdout + help.stderr, 'codra', 'help output');
 
+  const welcome = run([]);
+  assertIncludes(welcome.stdout, 'Local-first AI coding agent for your repo.', 'welcome output');
+
+  const doctor = run(['doctor']);
+  assertIncludes(doctor.stdout, 'Codra doctor', 'doctor output');
+
   const valid = run(['run', '--task', 'summarize-context', '--jsonl']);
   assertIncludes(valid.stdout, 'codra.run.started', 'run started event');
   assertIncludes(valid.stdout, 'codra.run.completed', 'run completed event');

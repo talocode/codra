@@ -1,4 +1,7 @@
+use codra_cli::doctor::execute_doctor;
+use codra_cli::init::execute_init;
 use codra_cli::run::{args_want_jsonl, execute_run};
+use codra_cli::terminal::{help, welcome};
 use codra_core::provider::{create_provider, EchoMockProvider, IntelligenceProvider};
 use codra_core::provider_config::ProviderConfigService;
 use codra_protocol::{McpServerInfo, ProviderConfig, ProviderKind};
@@ -13,8 +16,18 @@ use std::path::PathBuf;
 
 fn main() {
     let mut args = env::args().skip(1).collect::<Vec<_>>();
-    let command = args.first().map(String::as_str).unwrap_or("help");
+    let command = args.first().map(String::as_str).unwrap_or("");
     let result = match command {
+        "" => welcome(),
+        "--help" | "-h" | "help" => help(),
+        "init" => {
+            args.remove(0);
+            execute_init(&args)
+        }
+        "doctor" => {
+            args.remove(0);
+            execute_doctor(&args)
+        }
         "smoke" => smoke(),
         "provider" => {
             args.remove(0);
@@ -527,21 +540,4 @@ fn parse_worker_url(url: &str) -> Result<(String, u16), String> {
         .and_then(|p| p.parse::<u16>().ok())
         .unwrap_or(80);
     Ok((host, port))
-}
-
-fn help() -> Result<(), String> {
-    println!("codra <command>");
-    println!("  run --task <task> [--jsonl]  Run a task with optional JSONL event stream");
-    println!("                               Tasks: review-pr, explain-issue, summarize-context");
-    println!("  smoke             Validate local tool registry and workspace readiness");
-    println!("  provider check    Check active provider health");
-    println!("  worker add        Register a remote worker");
-    println!("  worker check      Probe a registered worker's health endpoint");
-    println!("  worker list       List registered workers");
-    println!("  worker pair       Interactive pair and verify a remote worker");
-    println!("  worker trust      Update a worker's trust level");
-    println!("  worker remove     Remove/unpair a registered worker");
-    println!("  headless <intent> Run a dry-run headless planning surface");
-    println!("  mcp-server        Print MCP-compatible server/tool metadata");
-    Ok(())
 }
