@@ -18,6 +18,7 @@ codra-core = { path = "../codra-core" }
 codra-protocol = { path = "../codra-protocol" }
 codra-runtime = { path = "../codra-runtime" }
 codra-tools = { path = "../codra-tools" }
+codra-deploy = { path = "../codra-deploy" }
 chrono = { workspace = true }
 reqwest = { workspace = true, features = ["blocking"] }
 tokio = { workspace = true }

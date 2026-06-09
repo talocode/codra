@@ -551,6 +551,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "codra-core",
+ "codra-deploy",
  "codra-protocol",
  "codra-runtime",
  "codra-tools",
@@ -606,7 +607,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
- "tokio",
 ]
 
 [[package]]

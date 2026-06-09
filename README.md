@@ -89,6 +89,16 @@ cargo check
 cargo test
 ```
 
+## Codra Ecosystem
+
+- Codra CLI: coding agent
+- Codra Action: GitHub automation layer
+- Codra Deploy: deployment and runtime layer
+
+Codra Deploy status: Experimental foundation.
+
+Example: `codra deploy plan --config codra.deploy.json`
+
 ## Codra CLI (event protocol + GitHub context)
 
 ```bash

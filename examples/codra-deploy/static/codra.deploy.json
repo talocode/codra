@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "project": "static-site",
+  "services": [
+    {
+      "name": "site",
+      "type": "static",
+      "root": ".",
+      "buildCommand": "npm run build",
+      "publishDir": "dist"
+    }
+  ]
+}

@@ -46,6 +46,10 @@ fn main() {
                 .cloned()
                 .unwrap_or_else(|| "Inspect workspace and report readiness.".to_string()),
         ),
+        "deploy" => {
+            args.remove(0);
+            codra_cli::deploy::execute_deploy_command(&args)
+        }
         "mcp-server" => mcp_server(),
         "run" => {
             args.remove(0);
