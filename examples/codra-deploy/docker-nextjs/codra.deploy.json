@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "project": "docker-nextjs",
+  "services": [
+    {
+      "name": "web",
+      "type": "web",
+      "root": ".",
+      "startCommand": "npm start",
+      "dockerfile": "Dockerfile",
+      "context": ".",
+      "healthCheckPath": "/",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "3000"
+      },
+      "ports": [
+        {
+          "internal": 3000,
+          "public": true
+        }
+      ]
+    }
+  ]
+}

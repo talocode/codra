@@ -1,4 +1,5 @@
 use crate::config::{DeployConfig, DeployServiceType};
+use crate::naming::is_valid_container_name;
 use serde::Serialize;
 use std::collections::BTreeSet;
 
@@ -80,6 +81,16 @@ pub fn validate_config(config: &DeployConfig) -> ValidationResult {
                 path: format!("{base}.command"),
                 message: "cron services require command".to_string(),
             });
+        }
+
+        if let Some(name) = service.container_name.as_deref() {
+            if !is_valid_container_name(name) {
+                errors.push(ValidationError {
+                    path: format!("{base}.containerName"),
+                    message: "containerName must be lowercase alphanumeric with dashes only"
+                        .to_string(),
+                });
+            }
         }
     }
 

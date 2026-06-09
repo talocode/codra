@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "project": "docker-worker",
+  "services": [
+    {
+      "name": "worker",
+      "type": "worker",
+      "root": ".",
+      "dockerfile": "Dockerfile",
+      "context": ".",
+      "env": {
+        "QUEUE_NAME": "jobs"
+      }
+    }
+  ]
+}
