@@ -24,6 +24,7 @@ pub fn welcome() -> Result<(), String> {
     println!("Next:");
     println!("  Run \"codra init\" to create CODRA.md for this repo.");
     println!("  Run \"codra doctor\" to check your environment.");
+    println!("  Run \"codra deploy plan --config codra.deploy.json\" to preview deployments.");
     Ok(())
 }
 
@@ -31,6 +32,7 @@ pub fn help() -> Result<(), String> {
     println!("codra <command>");
     println!("  init [--force] [--dry-run]     Create CODRA.md and .codra project skeleton");
     println!("  doctor [--json]                Check local Codra environment readiness");
+    println!("  deploy plan [--json]           Validate and render a safe deployment plan");
     println!("  run --task <task> [--jsonl]    Run a task with optional JSONL event stream");
     println!("                                 Tasks: review-pr, explain-issue, summarize-context");
     println!(

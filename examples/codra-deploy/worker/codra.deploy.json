@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "project": "worker-app",
+  "services": [
+    {
+      "name": "worker",
+      "type": "worker",
+      "root": ".",
+      "startCommand": "node worker.js",
+      "env": {
+        "QUEUE_NAME": "jobs"
+      }
+    }
+  ]
+}

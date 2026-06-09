@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "project": "nextjs-app",
+  "services": [
+    {
+      "name": "web",
+      "type": "web",
+      "root": ".",
+      "buildCommand": "npm run build",
+      "startCommand": "npm start",
+      "healthCheckPath": "/",
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "ports": [
+        {
+          "internal": 3000,
+          "public": true
+        }
+      ]
+    }
+  ]
+}
