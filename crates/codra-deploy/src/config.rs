@@ -44,6 +44,14 @@ pub struct DeployServiceConfig {
     pub env: BTreeMap<String, String>,
     #[serde(default)]
     pub ports: Vec<DeployPort>,
+    #[serde(default)]
+    pub dockerfile: Option<String>,
+    #[serde(default)]
+    pub context: Option<String>,
+    #[serde(default)]
+    pub image: Option<String>,
+    #[serde(rename = "containerName", default)]
+    pub container_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

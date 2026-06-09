@@ -144,3 +144,49 @@ fn deploy_plan_generation_includes_expected_fields() {
     assert_eq!(service.health_check_path.as_deref(), Some("/"));
     assert_eq!(service.start_command.as_deref(), Some("npm start"));
 }
+
+#[test]
+fn docker_fields_are_optional_and_preserve_old_configs() {
+    let config: DeployConfig = serde_json::from_str(
+        r#"{
+            "version": 1,
+            "project": "legacy-app",
+            "services": [
+                {
+                    "name": "web",
+                    "type": "web",
+                    "startCommand": "npm start",
+                    "ports": [{ "internal": 3000, "public": true }]
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    let result = validate_config(&config);
+    assert!(result.valid);
+}
+
+#[test]
+fn invalid_container_name_is_rejected() {
+    let config: DeployConfig = serde_json::from_str(
+        r#"{
+            "version": 1,
+            "project": "bad-name",
+            "services": [
+                {
+                    "name": "web",
+                    "type": "web",
+                    "startCommand": "npm start",
+                    "containerName": "Bad_Name",
+                    "ports": [{ "internal": 3000, "public": true }]
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    let result = validate_config(&config);
+    assert!(!result.valid);
+    assert!(result.errors.iter().any(|error| error.path.ends_with("containerName")));
+}
