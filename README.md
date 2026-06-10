@@ -59,7 +59,7 @@ Codra follows a clean layered architecture:
 - **Browser Runtime** — `codra-browser` using Chrome DevTools Protocol for local web interaction
 - **UI Layer** — React + Vite + Tailwind frontend for visualization and approvals
 - **Protocol Layer** — Shared TypeScript/Rust types via `codra-protocol`
-- **Persistence** — Local SQLite via `codra-memory`
+- **Persistence** — Task lifecycle state in `{workspace}/.codra/tasks/*.json` via `codra-core` `TaskStore` (`codra-memory` / SQLite is planned, not current)
 
 All heavy operations (file changes, terminal commands, browser control) happen in Rust. The React UI only visualizes state and requests approvals.
 
