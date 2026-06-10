@@ -1,0 +1,29 @@
+name: Codra Deploy browser smoke check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy application
+        id: deploy
+        run: |
+          # Placeholder deploy step.
+          # Replace with your real Codra Deploy publish/output logic.
+          echo "url=https://app.example.com" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Verify deployed frontend with Agent Browser
+        uses: talocode/agent-browser@v0
+        with:
+          url: ${{ steps.deploy.outputs.url }}
+          screenshot-out: agent-browser-screenshot.png
+          vision: "false"
+          upload-artifact: "true"
+          fail-on-console-errors: "true"
+          fail-on-network-errors: "true"
+          fail-on-blank: "true"

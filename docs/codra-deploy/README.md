@@ -16,6 +16,44 @@ Codra Deploy is for developers who want a small, predictable deployment surface 
 - Codra Action automates GitHub pull request and issue workflows.
 - Codra Deploy runs apps, workers, jobs, logs, domains, and runtime services on user-owned infrastructure.
 - Later, Codra can read failed deploy logs and propose fixes.
+- [Agent Browser](https://github.com/talocode/agent-browser) verifies live deployed URLs after release.
+
+## Post-deploy browser verification
+
+HTTP 200 is not enough. A deploy can succeed while the frontend is still broken:
+
+- blank or mostly empty pages
+- JavaScript console crashes
+- failed assets or API calls after page load
+- broken render states that curl and health checks miss
+
+Codra Deploy can run [Agent Browser](https://github.com/talocode/agent-browser) after deployment to inspect the live public URL in a real browser.
+
+Agent Browser catches:
+
+- page load and snapshot issues
+- console errors
+- failed network requests
+- optional screenshot evidence
+- optional blank/blur vision warnings
+
+GitHub Action usage is available and externally verified:
+
+```yaml
+uses: talocode/agent-browser@v0
+```
+
+See:
+
+- [agent-browser.md](agent-browser.md)
+- [examples/codra-deploy/github-actions/agent-browser-smoke.yml](../../examples/codra-deploy/github-actions/agent-browser-smoke.yml)
+- [External verification run](https://github.com/talocode/agent-browser-action-test/actions/runs/27259693056)
+
+Future Codra loop:
+
+1. Codra Deploy publishes a URL.
+2. Agent Browser returns a structured pass/warn/fail report.
+3. Codra reads the report, explains the issue, and suggests a fix.
 
 ## Commands
 
@@ -120,3 +158,10 @@ Optional per-service fields in `codra.deploy.json`:
 - Runtime health reporting
 - Database support
 - Remote runner abstractions
+- Post-deploy browser verification command:
+
+```bash
+codra deploy verify <url>
+# or
+codra browser check <url>
+```
