@@ -68,14 +68,26 @@ See [examples/codra-deploy/github-actions/agent-browser-smoke.yml](../../example
 
 ## Codra CLI integration
 
-Run Agent Browser from Codra Deploy after you have a live public URL:
+### Direct browser check
+
+```bash
+codra browser check https://your-app.example.com
+codra browser check https://your-app.example.com --screenshot-out check.png --vision
+```
+
+Use `codra browser check` for direct browser checks during development.
+
+### Deployment verification
 
 ```bash
 codra deploy verify https://your-app.example.com
 codra deploy verify https://your-app.example.com --json
 codra deploy verify https://your-app.example.com --screenshot-out /tmp/deploy-check.png --vision
 codra deploy verify https://your-app.example.com --allow-warnings
+codra deploy up --verify --service web
 ```
+
+Use `codra deploy verify` in deployment workflows. Use `codra deploy up --verify` when a service has an optional `verify` block in `codra.deploy.json`.
 
 Options:
 
@@ -99,4 +111,4 @@ For CI, prefer `talocode/agent-browser@v0` when Codra CLI is not installed on th
 2. Agent Browser returns a structured pass/warn/fail report.
 3. Codra reads the report, explains the issue, and suggests a fix.
 
-`codra browser check <url>` remains a possible future alias.
+`codra browser check` and `codra deploy verify` share the same internal verifier.
