@@ -93,7 +93,7 @@ fn evaluate_verify_outcome_warn_requires_allow_flag() {
 fn format_verify_human_renders_checks() {
     let parsed = parse_agent_browser_response(&sample_result_json("warn", "Smoke check passed with warnings."))
         .unwrap();
-    let rendered = format_verify_human(&parsed);
+    let rendered = format_verify_human(&parsed, "Codra Deploy Verify");
     assert!(rendered.contains("Codra Deploy Verify"));
     assert!(rendered.contains("Status: WARN"));
     assert!(rendered.contains("[warn] Page loaded."));

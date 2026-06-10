@@ -97,6 +97,17 @@ Show logs for a deployed web or worker container.
 codra deploy logs --service web --tail 100
 ```
 
+### `codra browser check`
+
+Direct Agent Browser smoke check for developers:
+
+```bash
+codra browser check https://your-app.com
+codra browser check https://your-app.com --screenshot-out check.png --vision
+```
+
+Use this for ad-hoc browser checks. Use `codra deploy verify` in deployment workflows and `codra deploy up --verify` for optional post-deploy hooks.
+
 ### `codra deploy verify`
 
 Run Agent Browser smoke check against a deployed public URL.
@@ -175,4 +186,3 @@ Optional per-service fields in `codra.deploy.json`:
 - Runtime health reporting
 - Database support
 - Remote runner abstractions
-- `codra browser check <url>` alias for deploy verification

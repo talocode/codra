@@ -146,7 +146,7 @@ High-level milestones:
 - [ ] Local workspace connection and project indexing
 - [ ] Planner, executor, verifier, and repair loop
 - [x] Browser runtime and deployment verification (`codra deploy verify <url>`)
-- [ ] `codra browser check <url>` alias
+- [x] `codra browser check <url>` alias
 - [ ] Mobile remote control through Talocode
 - [ ] Team/workspace sync through Talocode
 

@@ -1,4 +1,5 @@
 mod agent_browser_exec;
+mod browser;
 mod cli;
 mod config;
 mod url_safety;
@@ -13,10 +14,12 @@ pub use agent_browser_exec::{
     AgentBrowserCommandOutput, AgentBrowserExecutor, MockAgentBrowserExecutor,
     RealAgentBrowserExecutor, AGENT_BROWSER_INSTALL_MESSAGE,
 };
+pub use browser::{execute_browser_check, execute_browser_check_with_executor};
 pub use cli::verify::{
     agent_browser_install_message, build_agent_browser_args, evaluate_verify_outcome,
     execute_verify_with_executor, format_verify_human, parse_agent_browser_response,
-    parse_verify_args, AgentBrowserParsed, VerifyOptions,
+    parse_verify_args, run_verify_with_executor, AgentBrowserParsed, VerifyOptions,
+    VerifyPresentation,
 };
 pub use cli::{execute_deploy, execution_enabled, DeployOutputFormat};
 pub use url_safety::{assert_safe_url, ParsedHttpUrl};

@@ -7,6 +7,28 @@ use serde_json::Value;
 
 const DEFAULT_AGENT_BROWSER_BIN: &str = "agent-browser";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VerifyPresentation {
+    DeployVerify,
+    BrowserCheck,
+}
+
+impl VerifyPresentation {
+    pub fn human_title(self) -> &'static str {
+        match self {
+            Self::DeployVerify => "Codra Deploy Verify",
+            Self::BrowserCheck => "Codra Browser Check",
+        }
+    }
+
+    pub fn json_command(self) -> &'static str {
+        match self {
+            Self::DeployVerify => "codra deploy verify",
+            Self::BrowserCheck => "browser.check",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifyOptions {
     pub url: String,
@@ -49,9 +71,17 @@ pub fn execute_verify_with_executor(
     }
 
     let options = parse_verify_args(args)?;
+    run_verify_with_executor(&options, executor, VerifyPresentation::DeployVerify)
+}
+
+pub fn run_verify_with_executor(
+    options: &VerifyOptions,
+    executor: &dyn AgentBrowserExecutor,
+    presentation: VerifyPresentation,
+) -> Result<(), String> {
     assert_safe_url(&options.url)?;
 
-    let command_args = build_agent_browser_args(&options);
+    let command_args = build_agent_browser_args(options);
     let output = executor.run(&options.agent_browser_bin, &command_args)?;
 
     if !output.success() {
@@ -68,7 +98,7 @@ pub fn execute_verify_with_executor(
     }
 
     let parsed = parse_agent_browser_response(&output.stdout)?;
-    print_verify_output(&options, &parsed)?;
+    print_verify_output(options, &parsed, presentation)?;
     evaluate_verify_outcome(&parsed.status, &parsed.summary, options.allow_warnings)
 }
 
@@ -200,7 +230,7 @@ pub fn evaluate_verify_outcome(
     }
 }
 
-pub fn format_verify_human(parsed: &AgentBrowserParsed) -> String {
+pub fn format_verify_human(parsed: &AgentBrowserParsed, title: &str) -> String {
     let icon = match parsed.status.as_str() {
         "pass" => "PASS",
         "warn" => "WARN",
@@ -209,7 +239,7 @@ pub fn format_verify_human(parsed: &AgentBrowserParsed) -> String {
     };
 
     let mut lines = vec![
-        "Codra Deploy Verify".to_string(),
+        title.to_string(),
         format!("Status: {icon}"),
         format!("URL: {}", parsed.url),
         String::new(),
@@ -251,10 +281,14 @@ pub fn format_verify_human(parsed: &AgentBrowserParsed) -> String {
     lines.join("\n")
 }
 
-fn print_verify_output(options: &VerifyOptions, parsed: &AgentBrowserParsed) -> Result<(), String> {
+fn print_verify_output(
+    options: &VerifyOptions,
+    parsed: &AgentBrowserParsed,
+    presentation: VerifyPresentation,
+) -> Result<(), String> {
     if options.json {
         let body = VerifyJsonOutput {
-            command: "codra deploy verify",
+            command: presentation.json_command(),
             url: parsed.url.clone(),
             status: parsed.status.clone(),
             summary: parsed.summary.clone(),
@@ -267,7 +301,7 @@ fn print_verify_output(options: &VerifyOptions, parsed: &AgentBrowserParsed) -> 
         return Ok(());
     }
 
-    println!("{}", format_verify_human(parsed));
+    println!("{}", format_verify_human(parsed, presentation.human_title()));
     Ok(())
 }
 

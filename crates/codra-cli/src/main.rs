@@ -50,6 +50,10 @@ fn main() {
             args.remove(0);
             codra_cli::deploy::execute_deploy_command(&args)
         }
+        "browser" => {
+            args.remove(0);
+            codra_cli::browser::execute_browser_command(&args)
+        }
         "mcp-server" => mcp_server(),
         "run" => {
             args.remove(0);
