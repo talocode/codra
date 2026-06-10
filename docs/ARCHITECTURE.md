@@ -13,7 +13,8 @@ Codra is the local agent within the Talocode ecosystem. All execution, file oper
 - **Agent Orchestrator (`codra-core`)**: The main state machine operating the agent. Contains sub-modules for Planning, Building, and Verifying.
 - **Tooling Engine (`codra-tools`)**: Provides filesystem operations, Git management, search indexing, and terminal sandboxing.
 - **Computer-Use Engine (`codra-browser`)**: A discrete sub-system utilizing CDP to spawn and control Chrome/Chromium, strictly separate from the Tauri interface webview.
-- **Shared Data Layer (`codra-memory`, `codra-protocol`)**: Provides SQLite bindings and shared TS/RS schema representations.
+- **Shared Data Layer (`codra-protocol`, `codra-core` TaskStore)**: Shared TS/Rust schema types via `codra-protocol`; durable task lifecycle state via workspace-local JSON files (see Storage Extensibility).
+- **`codra-memory` (planned)**: Trait stub for future long-term memory; SQLite integration is not implemented yet.
 
 ## Desktop Shell Architecture
 
@@ -55,9 +56,15 @@ Responsible for launching targets, injecting JavaScript listeners, extracting DO
 
 ## Storage Extensibility
 
+**Current implementation note:** Codra currently persists task lifecycle state as JSON task files under `{workspace}/.codra/tasks/` (and task events under `.codra/tasks/events/` as JSONL). This is the durable source of truth for task state, approvals, and protocol events today. `SQLite` / `codra-memory` remains an architectural direction unless and until it is implemented. Agents and contributors must treat `.codra/tasks/*.json` as the current backend source of truth — not React state, not `localStorage`, and not `~/.codra-agent/data.sqlite`.
+
+- **Task state (current)**: `{workspace}/.codra/tasks/{task_id}.json` via `codra-core` `TaskStore`.
+- **Task events (current)**: `{workspace}/.codra/tasks/events/{task_id}.jsonl`.
 - **Checkpoints**: Written to `.codra/checkpoints` securely.
-- **Metadata**: Indexed into `~/.codra-agent/data.sqlite`.
+- **Long-term metadata (planned)**: `~/.codra-agent/data.sqlite` via `codra-memory` — not wired to the task loop yet.
 - **Migration Compatibility**: Runtime reads legacy `.forge` workspace data when `.codra` data is not yet present.
+
+See [docs/AGENT_TASK_LOOP.md](AGENT_TASK_LOOP.md) for the implemented task-loop persistence model.
 
 ## Talocode Integration Direction (Planned)
 
