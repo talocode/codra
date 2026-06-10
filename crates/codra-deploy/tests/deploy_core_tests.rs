@@ -168,6 +168,35 @@ fn docker_fields_are_optional_and_preserve_old_configs() {
 }
 
 #[test]
+fn config_with_verify_block_is_valid() {
+    let config: DeployConfig = serde_json::from_str(
+        r#"{
+            "version": 1,
+            "project": "verify-app",
+            "services": [
+                {
+                    "name": "web",
+                    "type": "web",
+                    "startCommand": "npm start",
+                    "ports": [{ "internal": 3000, "public": true }],
+                    "verify": {
+                        "enabled": true,
+                        "url": "https://example.com",
+                        "vision": false,
+                        "allowWarnings": false,
+                        "screenshotOut": "agent-browser-screenshot.png"
+                    }
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    let result = validate_config(&config);
+    assert!(result.valid);
+}
+
+#[test]
 fn invalid_container_name_is_rejected() {
     let config: DeployConfig = serde_json::from_str(
         r#"{

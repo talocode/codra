@@ -1,4 +1,6 @@
-use crate::config::{DeployConfig, DeployServiceConfig, DeployServiceType};
+use crate::config::{
+    DeployConfig, DeployServiceConfig, DeployServiceType, DeployServiceVerifyConfig,
+};
 use serde::Serialize;
 use std::collections::BTreeSet;
 
@@ -26,6 +28,17 @@ pub struct DeployPlanService {
     pub schedule: Option<String>,
     pub command: Option<String>,
     pub publish_dir: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verify: Option<DeployPlanVerify>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DeployPlanVerify {
+    pub enabled: bool,
+    pub url: Option<String>,
+    pub vision: bool,
+    pub allow_warnings: bool,
+    pub screenshot_out: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -85,6 +98,7 @@ pub fn generate_plan(config: &DeployConfig) -> DeployPlan {
                 schedule: service.schedule.clone(),
                 command: service.command.clone(),
                 publish_dir: service.publish_dir.clone(),
+                verify: service.verify.as_ref().map(plan_verify_from_config),
             }
         })
         .collect();
@@ -114,6 +128,16 @@ fn required_env_keys(service: &DeployServiceConfig) -> Vec<String> {
         keys.insert("PORT".to_string());
     }
     keys.into_iter().collect()
+}
+
+fn plan_verify_from_config(verify: &DeployServiceVerifyConfig) -> DeployPlanVerify {
+    DeployPlanVerify {
+        enabled: verify.enabled,
+        url: verify.url.clone(),
+        vision: verify.vision,
+        allow_warnings: verify.allow_warnings,
+        screenshot_out: verify.screenshot_out.clone(),
+    }
 }
 
 fn expected_port(service: &DeployServiceConfig) -> Option<u16> {

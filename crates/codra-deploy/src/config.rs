@@ -15,6 +15,19 @@ pub enum DeployServiceType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeployServiceVerifyConfig {
+    pub enabled: bool,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub vision: bool,
+    #[serde(rename = "allowWarnings", default)]
+    pub allow_warnings: bool,
+    #[serde(rename = "screenshotOut", default)]
+    pub screenshot_out: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployPort {
     pub internal: u16,
     #[serde(default)]
@@ -52,6 +65,8 @@ pub struct DeployServiceConfig {
     pub image: Option<String>,
     #[serde(rename = "containerName", default)]
     pub container_name: Option<String>,
+    #[serde(default)]
+    pub verify: Option<DeployServiceVerifyConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

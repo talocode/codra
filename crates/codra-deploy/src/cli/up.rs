@@ -1,6 +1,8 @@
+use crate::agent_browser_exec::{AgentBrowserExecutor, RealAgentBrowserExecutor};
 use crate::cli::execution_enabled;
 use crate::docker_availability::detect_docker_available;
 use crate::docker_exec::RealDockerExecutor;
+use crate::post_verify::run_post_deploy_verification;
 use crate::runner::docker::LocalDockerRunner;
 use crate::runner::runtime::{RuntimeMode, RuntimePlan, RuntimeStatus};
 use crate::validator::ValidationError;
@@ -22,10 +24,18 @@ struct DeployUpOutput {
 }
 
 pub fn execute_up(args: &[String]) -> Result<(), String> {
+    execute_up_with_executor(args, &RealAgentBrowserExecutor)
+}
+
+pub fn execute_up_with_executor(
+    args: &[String],
+    verify_executor: &dyn AgentBrowserExecutor,
+) -> Result<(), String> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
-        println!("codra deploy up [--config codra.deploy.json] [--service <name>] [--dry-run] [--execute] [--json]");
+        println!("codra deploy up [--config codra.deploy.json] [--service <name>] [--dry-run] [--execute] [--verify] [--json]");
         println!("  Prepare or execute a local Docker deployment.");
         println!("  Default mode is dry-run. Real execution requires --execute and CODRA_DEPLOY_ENABLE_EXECUTE=1.");
+        println!("  Post-deploy verification runs only with --verify when service.verify.enabled is true.");
         return Ok(());
     }
 
@@ -56,47 +66,62 @@ pub fn execute_up(args: &[String]) -> Result<(), String> {
         mode,
     );
 
-    if wants_execute && !execution_enabled(parsed.execute) {
+    let deploy_result = if wants_execute && !execution_enabled(parsed.execute) {
         plan.status = RuntimeStatus::Refused;
-        return finish_up(parsed.json, plan, Some(
-            "execution refused: set CODRA_DEPLOY_ENABLE_EXECUTE=1 to enable real Docker execution"
-                .to_string(),
-        ));
-    }
-
-    if wants_execute && execution_enabled(parsed.execute) {
+        finish_up(
+            parsed.json,
+            plan,
+            Some(
+                "execution refused: set CODRA_DEPLOY_ENABLE_EXECUTE=1 to enable real Docker execution"
+                    .to_string(),
+            ),
+        )
+    } else if wants_execute && execution_enabled(parsed.execute) {
         let availability = detect_docker_available();
         if !availability.available {
             plan.status = RuntimeStatus::Failed;
-            return finish_up(
+            finish_up(
                 parsed.json,
                 plan,
                 Some(format!(
                     "Docker execution failed: {}",
                     availability.message
                 )),
-            );
-        }
-
-        match LocalDockerRunner::execute(&plan, &RealDockerExecutor) {
-            Ok(result) => {
-                plan.status = result.status;
-                finish_up(parsed.json, plan, result.message)
-            }
-            Err(err) => {
-                plan.status = RuntimeStatus::Failed;
-                finish_up(parsed.json, plan, Some(err))
+            )
+        } else {
+            match LocalDockerRunner::execute(&plan, &RealDockerExecutor) {
+                Ok(result) => {
+                    plan.status = result.status;
+                    finish_up(parsed.json, plan, result.message)
+                }
+                Err(err) => {
+                    plan.status = RuntimeStatus::Failed;
+                    finish_up(parsed.json, plan, Some(err))
+                }
             }
         }
     } else {
         finish_up(parsed.json, plan, None)
+    };
+
+    deploy_result?;
+    if parsed.verify {
+        run_post_deploy_verification(
+            &config,
+            parsed.service.as_deref(),
+            parsed.json,
+            verify_executor,
+        )?;
     }
+
+    Ok(())
 }
 
 struct UpArgs {
     config_path: PathBuf,
     service: Option<String>,
     execute: bool,
+    verify: bool,
     json: bool,
 }
 
@@ -105,6 +130,7 @@ fn parse_args(args: &[String]) -> Result<UpArgs, String> {
     let mut service = None;
     let mut dry_run = false;
     let mut execute = false;
+    let mut verify = false;
     let mut json = false;
     let mut iter = args.iter().peekable();
 
@@ -124,6 +150,7 @@ fn parse_args(args: &[String]) -> Result<UpArgs, String> {
             }
             "--dry-run" => dry_run = true,
             "--execute" => execute = true,
+            "--verify" => verify = true,
             "--json" => json = true,
             flag if flag.starts_with("--") => return Err(format!("unknown flag: {flag}")),
             other => return Err(format!("unexpected argument: {other}")),
@@ -138,6 +165,7 @@ fn parse_args(args: &[String]) -> Result<UpArgs, String> {
         config_path,
         service,
         execute,
+        verify,
         json,
     })
 }

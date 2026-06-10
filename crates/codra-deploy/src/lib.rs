@@ -1,6 +1,7 @@
 mod agent_browser_exec;
 mod cli;
 mod config;
+mod post_verify;
 mod url_safety;
 mod docker_availability;
 mod docker_exec;
@@ -13,11 +14,15 @@ pub use agent_browser_exec::{
     AgentBrowserCommandOutput, AgentBrowserExecutor, MockAgentBrowserExecutor,
     RealAgentBrowserExecutor, AGENT_BROWSER_INSTALL_MESSAGE,
 };
+pub use cli::up::execute_up_with_executor;
 pub use cli::verify::{
     agent_browser_install_message, build_agent_browser_args, evaluate_verify_outcome,
     execute_verify_with_executor, format_verify_human, parse_agent_browser_response,
-    parse_verify_args, AgentBrowserParsed, VerifyOptions,
+    parse_verify_args, run_verify_with_executor, AgentBrowserParsed, VerifyOptions,
 };
+pub use config::DeployServiceVerifyConfig;
+pub use post_verify::{run_post_deploy_verification, MISSING_VERIFY_URL_WARNING};
+pub use plan::DeployPlanVerify;
 pub use cli::{execute_deploy, execution_enabled, DeployOutputFormat};
 pub use url_safety::{assert_safe_url, ParsedHttpUrl};
 pub use config::{

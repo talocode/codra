@@ -162,6 +162,77 @@ fn cli_up_service_filter_works() {
 }
 
 #[test]
+fn cli_plan_displays_verify_settings() {
+    let dir = temp_dir();
+    let config = dir.join("codra.deploy.json");
+    fs::write(
+        &config,
+        r#"{
+            "version": 1,
+            "project": "verify-app",
+            "services": [
+                {
+                    "name": "web",
+                    "type": "web",
+                    "startCommand": "npm start",
+                    "ports": [{ "internal": 3000, "public": true }],
+                    "verify": {
+                        "enabled": true,
+                        "url": "https://example.com",
+                        "vision": true,
+                        "allowWarnings": false
+                    }
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    let result = execute_deploy_command(&[
+        "plan".to_string(),
+        "--config".to_string(),
+        config.display().to_string(),
+    ]);
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn cli_up_without_verify_flag_succeeds_for_verify_config() {
+    let dir = temp_dir();
+    let config = dir.join("codra.deploy.json");
+    fs::write(
+        &config,
+        r#"{
+            "version": 1,
+            "project": "verify-app",
+            "services": [
+                {
+                    "name": "web",
+                    "type": "web",
+                    "startCommand": "npm start",
+                    "ports": [{ "internal": 3000, "public": true }],
+                    "verify": {
+                        "enabled": true,
+                        "url": "https://example.com"
+                    }
+                }
+            ]
+        }"#,
+    )
+    .unwrap();
+
+    let result = execute_deploy_command(&[
+        "up".to_string(),
+        "--config".to_string(),
+        config.display().to_string(),
+        "--dry-run".to_string(),
+    ]);
+
+    assert!(result.is_ok());
+}
+
+#[test]
 fn cli_verify_rejects_localhost_without_override() {
     let result = execute_deploy_command(&[
         "verify".to_string(),

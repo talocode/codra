@@ -1,6 +1,6 @@
 mod logs;
 mod plan;
-mod up;
+pub mod up;
 pub mod verify;
 
 use std::env;
@@ -32,7 +32,7 @@ fn print_deploy_help() {
     println!();
     println!("Commands:");
     println!("  plan   Validate and render a safe deployment plan");
-    println!("  up     Prepare or execute a local Docker deployment");
+    println!("  up     Prepare or execute a local Docker deployment (optional --verify)");
     println!("  logs   Show logs for a deployed service container");
     println!("  verify Run Agent Browser smoke check against a deployed URL");
     println!();

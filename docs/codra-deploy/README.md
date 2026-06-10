@@ -97,6 +97,41 @@ Show logs for a deployed web or worker container.
 codra deploy logs --service web --tail 100
 ```
 
+### Optional post-deploy verification
+
+Services can declare an optional `verify` block in `codra.deploy.json`:
+
+```json
+{
+  "services": [
+    {
+      "name": "web",
+      "type": "web",
+      "startCommand": "npm start",
+      "ports": [{ "internal": 3000, "public": true }],
+      "verify": {
+        "enabled": true,
+        "url": "https://example.com",
+        "vision": false,
+        "allowWarnings": false,
+        "screenshotOut": "agent-browser-screenshot.png"
+      }
+    }
+  ]
+}
+```
+
+- `verify` is optional; existing configs remain valid.
+- `codra deploy plan` shows verification settings when present.
+- `codra deploy up` does **not** run verification unless you pass `--verify`.
+- When `--verify` is passed and `verify.enabled` is `true`, Codra calls the same Agent Browser verifier used by `codra deploy verify`.
+- If `verify.url` is missing, Codra prints a warning and skips verification. Codra does not guess URLs.
+
+```bash
+codra deploy up --verify
+codra deploy up --verify --service web
+```
+
 ### `codra deploy verify`
 
 Run Agent Browser smoke check against a deployed public URL.
@@ -120,6 +155,7 @@ codra deploy plan --config examples/codra-deploy/docker-nextjs/codra.deploy.json
 codra deploy up --config examples/codra-deploy/docker-nextjs/codra.deploy.json --dry-run
 CODRA_DEPLOY_ENABLE_EXECUTE=1 codra deploy up --execute --service web --config examples/codra-deploy/docker-nextjs/codra.deploy.json
 codra deploy logs --service web --config examples/codra-deploy/docker-nextjs/codra.deploy.json
+codra deploy up --verify --service web --config examples/codra-deploy/docker-nextjs/codra.deploy.json
 codra deploy verify https://your-app.example.com --json
 ```
 

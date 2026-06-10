@@ -66,6 +66,29 @@ See [examples/codra-deploy/github-actions/agent-browser-smoke.yml](../../example
 - Vision is optional; `vision: false` does not require Python or OpenCV.
 - Agent Browser does not automate login, bypass CAPTCHAs, or scrape private/internal networks by default.
 
+## Optional post-deploy hook
+
+Configure verification per service in `codra.deploy.json`:
+
+```json
+"verify": {
+  "enabled": true,
+  "url": "https://your-app.example.com",
+  "vision": false,
+  "allowWarnings": false,
+  "screenshotOut": "agent-browser-screenshot.png"
+}
+```
+
+Run it only when you opt in:
+
+```bash
+codra deploy up --verify
+codra deploy up --verify --service web
+```
+
+Verification is never automatic. Agent Browser is only required when `--verify` is passed.
+
 ## Codra CLI integration
 
 Run Agent Browser from Codra Deploy after you have a live public URL:

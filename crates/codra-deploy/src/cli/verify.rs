@@ -49,9 +49,16 @@ pub fn execute_verify_with_executor(
     }
 
     let options = parse_verify_args(args)?;
+    run_verify_with_executor(&options, executor)
+}
+
+pub fn run_verify_with_executor(
+    options: &VerifyOptions,
+    executor: &dyn AgentBrowserExecutor,
+) -> Result<(), String> {
     assert_safe_url(&options.url)?;
 
-    let command_args = build_agent_browser_args(&options);
+    let command_args = build_agent_browser_args(options);
     let output = executor.run(&options.agent_browser_bin, &command_args)?;
 
     if !output.success() {
@@ -68,7 +75,7 @@ pub fn execute_verify_with_executor(
     }
 
     let parsed = parse_agent_browser_response(&output.stdout)?;
-    print_verify_output(&options, &parsed)?;
+    print_verify_output(options, &parsed)?;
     evaluate_verify_outcome(&parsed.status, &parsed.summary, options.allow_warnings)
 }
 

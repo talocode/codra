@@ -103,6 +103,17 @@ fn print_human(plan: &DeployPlan) {
         if !service.redacted_env.is_empty() {
             println!("Env values: redacted");
         }
+        if let Some(verify) = &service.verify {
+            println!(
+                "Post-deploy verification: {}",
+                if verify.enabled { "enabled" } else { "disabled" }
+            );
+            println!(
+                "Verification URL: {}",
+                verify.url.as_deref().unwrap_or("not set")
+            );
+            println!("Vision: {}", verify.vision);
+        }
         println!();
     }
     if !plan.warnings.is_empty() {
