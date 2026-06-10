@@ -97,6 +97,22 @@ Show logs for a deployed web or worker container.
 codra deploy logs --service web --tail 100
 ```
 
+### `codra deploy verify`
+
+Run Agent Browser smoke check against a deployed public URL.
+
+```bash
+codra deploy verify https://example.com
+codra deploy verify https://example.com --json --allow-warnings
+codra deploy verify https://example.com --screenshot-out /tmp/deploy-check.png --vision
+```
+
+Requires `agent-browser` on `PATH` (`npm install -g @talocode/agent-browser`) or use the GitHub Action `talocode/agent-browser@v0` in CI.
+
+- Public `http://` and `https://` URLs only; localhost and private networks are blocked by default.
+- Exits non-zero on `fail`, and on `warn` unless `--allow-warnings` is set.
+- Does not commit screenshot artifacts; pass `--screenshot-out` only when you want a local file.
+
 ## Example Flow
 
 ```bash
@@ -104,6 +120,7 @@ codra deploy plan --config examples/codra-deploy/docker-nextjs/codra.deploy.json
 codra deploy up --config examples/codra-deploy/docker-nextjs/codra.deploy.json --dry-run
 CODRA_DEPLOY_ENABLE_EXECUTE=1 codra deploy up --execute --service web --config examples/codra-deploy/docker-nextjs/codra.deploy.json
 codra deploy logs --service web --config examples/codra-deploy/docker-nextjs/codra.deploy.json
+codra deploy verify https://your-app.example.com --json
 ```
 
 ## MVP Runtime Scope
@@ -158,10 +175,4 @@ Optional per-service fields in `codra.deploy.json`:
 - Runtime health reporting
 - Database support
 - Remote runner abstractions
-- Post-deploy browser verification command:
-
-```bash
-codra deploy verify <url>
-# or
-codra browser check <url>
-```
+- `codra browser check <url>` alias for deploy verification

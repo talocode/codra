@@ -35,6 +35,7 @@ pub fn help() -> Result<(), String> {
     println!("  deploy plan [--json]           Validate and render a safe deployment plan");
     println!("  deploy up [--dry-run|--execute] Prepare or run a local Docker deployment");
     println!("  deploy logs --service <name>   Show logs for a deployed service container");
+    println!("  deploy verify <url>            Run Agent Browser smoke check on a deployed URL");
     println!("  run --task <task> [--jsonl]    Run a task with optional JSONL event stream");
     println!("                                 Tasks: review-pr, explain-issue, summarize-context");
     println!(
