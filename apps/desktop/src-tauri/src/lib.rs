@@ -880,6 +880,7 @@ fn codra_approve_repair(
 ) -> Result<codra_protocol::Task, String> {
     let task_store = TaskStore::new(&workspace_path);
     let mut task = task_store.load_task(&task_id)?;
+    task_store.assert_task_workspace(&task)?;
     if task.status != codra_protocol::TaskStatus::AwaitingRepairApproval {
         return Err("Can only approve repair from AwaitingRepairApproval state".to_string());
     }

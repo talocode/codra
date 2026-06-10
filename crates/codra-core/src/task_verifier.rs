@@ -23,6 +23,7 @@ impl<R: CommandRunner> TaskVerifier<R> {
         custom_commands: Option<Vec<String>>,
     ) -> Result<VerificationResult, String> {
         let mut task = self.task_store.load_task(task_id)?;
+        self.task_store.assert_task_workspace(&task)?;
 
         match task.status {
             TaskStatus::Approved | TaskStatus::Executing | TaskStatus::Verifying => {}
