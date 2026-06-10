@@ -19,6 +19,7 @@ impl<R: CommandRunner> TaskExecutor<R> {
 
     pub fn execute_approved_task(&self, task_id: &str) -> Result<Task, String> {
         let mut task = self.task_store.load_task(task_id)?;
+        self.task_store.assert_task_workspace(&task)?;
 
         if task.status != TaskStatus::Approved {
             return Err("Task must be Approved before execution".to_string());

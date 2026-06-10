@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
 pub struct TaskStore {
+    workspace_root: PathBuf,
     tasks_dir: PathBuf,
     events_dir: PathBuf,
 }
@@ -20,9 +21,32 @@ impl TaskStore {
         let _ = fs::create_dir_all(&events_dir);
 
         Self {
+            workspace_root: root.to_path_buf(),
             tasks_dir,
             events_dir,
         }
+    }
+
+    pub fn workspace_root(&self) -> &Path {
+        &self.workspace_root
+    }
+
+    pub fn assert_task_workspace(&self, task: &Task) -> Result<(), String> {
+        let task_workspace = task.workspace_path.trim();
+        if task_workspace.is_empty() {
+            return Err("Task workspace_path is required".to_string());
+        }
+
+        if !workspace_paths_equivalent(self.workspace_root(), Path::new(task_workspace)) {
+            return Err(format!(
+                "Task {} belongs to workspace {}, not {}",
+                task.id,
+                task.workspace_path,
+                self.workspace_root().display()
+            ));
+        }
+
+        Ok(())
     }
 
     pub fn save_task(&self, task: &Task) -> Result<(), String> {
@@ -80,4 +104,22 @@ impl TaskStore {
         }
         Ok(events)
     }
+}
+
+fn workspace_paths_equivalent(expected: &Path, actual: &Path) -> bool {
+    if let (Ok(expected_canon), Ok(actual_canon)) =
+        (expected.canonicalize(), actual.canonicalize())
+    {
+        return expected_canon == actual_canon;
+    }
+
+    normalize_workspace_path(expected) == normalize_workspace_path(actual)
+}
+
+fn normalize_workspace_path(path: &Path) -> String {
+    let mut normalized = path.to_string_lossy().replace('\\', "/");
+    while normalized.len() > 1 && normalized.ends_with('/') {
+        normalized.pop();
+    }
+    normalized
 }

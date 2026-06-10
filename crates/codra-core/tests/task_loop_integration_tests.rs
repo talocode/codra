@@ -1,5 +1,6 @@
 use codra_core::command_runner::MockCommandRunner;
 use codra_core::command_safety::is_command_allowed;
+use codra_core::task_lifecycle::TaskLifecycle;
 use codra_core::task_planner::TaskPlanner;
 use codra_core::task_store::TaskStore;
 use codra_core::task_verifier::TaskVerifier;
@@ -63,4 +64,72 @@ fn test_task_verifier_with_mock_runner_completes_on_success() {
 
     let result = verifier.run_verification(&task.id, None).unwrap();
     assert!(result.success);
+}
+
+#[test]
+fn test_approve_task_succeeds_for_matching_workspace() {
+    let dir = tempdir().unwrap();
+    let workspace = dir.path();
+    fs::write(workspace.join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+
+    let task_store = TaskStore::new(workspace);
+    let planner = TaskPlanner::new(task_store.clone());
+    let task = planner
+        .create_task(workspace.to_str().unwrap(), "Ship feature", None)
+        .unwrap();
+
+    let lifecycle = TaskLifecycle::new(task_store);
+    let approved = lifecycle.approve_task(&task.id).unwrap();
+
+    assert_eq!(approved.status, TaskStatus::Approved);
+}
+
+#[test]
+fn test_approve_task_rejects_mismatched_workspace() {
+    let workspace_a = tempdir().unwrap();
+    let workspace_b = tempdir().unwrap();
+    fs::write(
+        workspace_a.path().join("Cargo.toml"),
+        "[package]\nname = \"test\"",
+    )
+    .unwrap();
+
+    let store_a = TaskStore::new(workspace_a.path());
+    let planner = TaskPlanner::new(store_a.clone());
+    let mut task = planner
+        .create_task(workspace_a.path().to_str().unwrap(), "Ship feature", None)
+        .unwrap();
+
+    task.workspace_path = workspace_b.path().to_string_lossy().to_string();
+    store_a.save_task(&task).unwrap();
+
+    let lifecycle = TaskLifecycle::new(store_a);
+    let result = lifecycle.approve_task(&task.id);
+
+    assert!(result.is_err());
+    assert!(result
+        .unwrap_err()
+        .contains("belongs to workspace"));
+}
+
+#[test]
+fn test_approve_task_rejects_empty_workspace_path() {
+    let dir = tempdir().unwrap();
+    let workspace = dir.path();
+    fs::write(workspace.join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+
+    let task_store = TaskStore::new(workspace);
+    let planner = TaskPlanner::new(task_store.clone());
+    let mut task = planner
+        .create_task(workspace.to_str().unwrap(), "Ship feature", None)
+        .unwrap();
+
+    task.workspace_path = "   ".to_string();
+    task_store.save_task(&task).unwrap();
+
+    let lifecycle = TaskLifecycle::new(task_store);
+    let result = lifecycle.approve_task(&task.id);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("workspace_path is required"));
 }

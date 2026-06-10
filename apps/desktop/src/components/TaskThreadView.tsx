@@ -15,8 +15,10 @@ import {
   approveTask,
   cancelTask,
   executeTask,
+  getTask,
 } from "../lib/codraTaskApi";
 import type { Task, TaskEvent, WorkspaceContext } from "../lib/codraTaskApi";
+import { runTaskMutationWithRecovery } from "../lib/taskMutationRecovery";
 
 interface TaskThreadViewProps {
   task: Task | null;
@@ -48,15 +50,24 @@ export function TaskThreadView({
     return null;
   }
 
+  const currentTask = task;
+
   async function runMutation(nextTask: () => Promise<Task>) {
     setLoading(true);
     setActionError(null);
     try {
-      const updated = await nextTask();
-      await onTaskUpdated(updated);
-      await onRefreshEvents?.();
-    } catch (cause) {
-      setActionError(`Failed to update task: ${String(cause)}`);
+      const result = await runTaskMutationWithRecovery({
+        mutate: nextTask,
+        taskId: currentTask.id,
+        workspacePath: currentTask.workspacePath,
+        getTask,
+        onTaskUpdated,
+        onRefreshEvents,
+      });
+
+      if (!result.ok) {
+        setActionError(result.error);
+      }
     } finally {
       setLoading(false);
     }

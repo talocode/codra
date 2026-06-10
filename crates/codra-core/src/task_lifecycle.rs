@@ -13,6 +13,7 @@ impl TaskLifecycle {
 
     pub fn approve_task(&self, task_id: &str) -> Result<Task, String> {
         let mut task = self.task_store.load_task(task_id)?;
+        self.task_store.assert_task_workspace(&task)?;
 
         if task.status != TaskStatus::AwaitingApproval {
             return Err(format!(
@@ -31,6 +32,7 @@ impl TaskLifecycle {
 
     pub fn cancel_task(&self, task_id: &str, reason: Option<&str>) -> Result<Task, String> {
         let mut task = self.task_store.load_task(task_id)?;
+        self.task_store.assert_task_workspace(&task)?;
 
         match task.status {
             TaskStatus::Draft
@@ -58,6 +60,7 @@ impl TaskLifecycle {
 
     pub fn mark_task_failed(&self, task_id: &str, error: &str) -> Result<Task, String> {
         let mut task = self.task_store.load_task(task_id)?;
+        self.task_store.assert_task_workspace(&task)?;
         task.status = TaskStatus::Failed;
         task.error = Some(error.to_string());
         task.updated_at = current_timestamp();
