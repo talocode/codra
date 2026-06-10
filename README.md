@@ -99,6 +99,8 @@ Codra Deploy status: Experimental foundation.
 
 Example: `codra deploy plan --config codra.deploy.json`
 
+Post-deploy browser verification: use [Agent Browser](https://github.com/talocode/agent-browser) via `talocode/agent-browser@v0` to inspect live deployed URLs. See [docs/codra-deploy/agent-browser.md](docs/codra-deploy/agent-browser.md).
+
 ## Codra CLI (event protocol + GitHub context)
 
 ```bash
@@ -143,7 +145,7 @@ High-level milestones:
 
 - [ ] Local workspace connection and project indexing
 - [ ] Planner, executor, verifier, and repair loop
-- [ ] Browser runtime and deployment verification
+- [ ] Browser runtime and deployment verification (`codra deploy verify <url>` / `codra browser check <url>`)
 - [ ] Mobile remote control through Talocode
 - [ ] Team/workspace sync through Talocode
 
