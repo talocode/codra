@@ -66,20 +66,37 @@ See [examples/codra-deploy/github-actions/agent-browser-smoke.yml](../../example
 - Vision is optional; `vision: false` does not require Python or OpenCV.
 - Agent Browser does not automate login, bypass CAPTCHAs, or scrape private/internal networks by default.
 
-## Future Codra integration
+## Codra CLI integration
 
-Planned CLI commands:
+Run Agent Browser from Codra Deploy after you have a live public URL:
 
 ```bash
-codra deploy verify <url>
-# or
-codra browser check <url>
+codra deploy verify https://your-app.example.com
+codra deploy verify https://your-app.example.com --json
+codra deploy verify https://your-app.example.com --screenshot-out /tmp/deploy-check.png --vision
+codra deploy verify https://your-app.example.com --allow-warnings
 ```
 
-Future Codra loop:
+Options:
+
+- `--screenshot-out <path>` — save a screenshot locally (not committed by Codra)
+- `--vision` — run optional blank/blur vision checks when a screenshot is captured
+- `--json` — machine-readable Codra summary plus the Agent Browser result payload
+- `--allow-warnings` — exit 0 when Agent Browser reports `warn`
+- `--agent-browser-bin <path>` — override the `agent-browser` binary path
+
+Codra shells out to `agent-browser check <url> --json` and maps pass/warn/fail to exit codes. If `agent-browser` is missing, Codra prints install guidance:
+
+```bash
+npm install -g @talocode/agent-browser
+```
+
+For CI, prefer `talocode/agent-browser@v0` when Codra CLI is not installed on the runner.
+
+## Codra loop
 
 1. Codra Deploy publishes a URL.
 2. Agent Browser returns a structured pass/warn/fail report.
 3. Codra reads the report, explains the issue, and suggests a fix.
 
-These commands are not implemented yet. This document is the first integration template.
+`codra browser check <url>` remains a possible future alias.

@@ -162,6 +162,26 @@ fn cli_up_service_filter_works() {
 }
 
 #[test]
+fn cli_verify_rejects_localhost_without_override() {
+    let result = execute_deploy_command(&[
+        "verify".to_string(),
+        "http://localhost:3000".to_string(),
+    ]);
+
+    assert!(result.is_err());
+    let message = result.unwrap_err();
+    assert!(message.contains("Localhost is disabled"));
+}
+
+#[test]
+fn cli_verify_requires_url() {
+    let result = execute_deploy_command(&["verify".to_string()]);
+
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("URL is required"));
+}
+
+#[test]
 fn cli_logs_resolves_expected_container_name() {
     let dir = temp_dir();
     let config = write_docker_config(&dir);
