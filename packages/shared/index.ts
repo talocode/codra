@@ -6,3 +6,5 @@ export * from "./integrations";
 export * from "./provider";
 export * from "./runtime";
 export * from "./task-loop";
+export * from "./agent-loop";
+export * from "./agent-loop-classifier";

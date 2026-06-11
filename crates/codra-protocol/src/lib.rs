@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+pub mod agent_loop;
+pub use agent_loop::{
+    AgentApiErrorClass, AgentApiResponseStatus, AgentContentClassification, AgentFinishReason,
+    AgentGoalVerdict, AgentLoopDecision, AgentLoopEventType, AgentLoopState, AgentLoopTransition,
+};
+
 // --- PREVIOUS SHARED TYPES ---
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaskMode {

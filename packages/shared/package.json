@@ -3,7 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "main": "index.ts",
+  "scripts": {
+    "test": "tsx --test agent-loop.test.ts",
+    "build": "tsc --noEmit"
+  },
   "dependencies": {
     "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4"
   }
 }

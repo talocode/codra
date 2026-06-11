@@ -547,3 +547,25 @@ PR 1 is intentionally first: memory and checkpointing need a loop that knows **w
 | UI role | Observe events; never drive loop transitions |
 
 This is the right next serious upgrade for Codra: **long-horizon reliability through a disciplined harness**, inspired by MiMo’s architecture but implemented Codra-native in Rust/TS with existing safety and approval gates.
+
+---
+
+## PR 1 Status
+
+**Implemented:** `feat(agent-loop): add finish reason state machine`
+
+PR 1 delivers the pure state machine foundation only:
+
+- TypeScript types and classifiers in `packages/shared/agent-loop.ts` and `packages/shared/agent-loop-classifier.ts`
+- Table-driven tests in `packages/shared/agent-loop.test.ts`
+- Rust mirror enums/structs in `crates/codra-protocol/src/agent_loop.rs`
+
+**Not in PR 1 (later PRs):**
+
+- Runtime wiring into `codra-core` task execution
+- Checkpoint files and context rebuild
+- Goal verification provider calls
+- Memory writer subagent
+- Dream / Distill
+
+**Recommended next PR:** Goal verification classifier and judge hooks — prevents agents from stopping before the task is actually complete.

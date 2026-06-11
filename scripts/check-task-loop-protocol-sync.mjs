@@ -4,9 +4,12 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const rustPath = path.join(repoRoot, "crates/codra-protocol/src/lib.rs");
+const rustPaths = [
+  path.join(repoRoot, "crates/codra-protocol/src/lib.rs"),
+  path.join(repoRoot, "crates/codra-protocol/src/agent_loop.rs"),
+];
 
-const rustSource = readFileSync(rustPath, "utf8");
+const rustSource = rustPaths.map((filePath) => readFileSync(filePath, "utf8")).join("\n");
 
 const RAW = "raw";
 const CAMEL = "camel";
@@ -91,6 +94,21 @@ const DOMAIN_CONFIGS = [
       "RetryRequest",
       "VerificationState",
     ],
+  },
+  {
+    label: "agent-loop",
+    tsPath: path.join(repoRoot, "packages/shared/agent-loop.ts"),
+    fieldNameStyle: CAMEL,
+    unions: [
+      "AgentLoopState",
+      "AgentFinishReason",
+      "AgentApiResponseStatus",
+      "AgentContentClassification",
+      "AgentApiErrorClass",
+      "AgentGoalVerdict",
+      "AgentLoopEventType",
+    ],
+    interfaces: ["AgentLoopTransition", "AgentLoopDecision"],
   },
 ];
 
