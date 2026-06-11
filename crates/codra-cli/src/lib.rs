@@ -2,6 +2,7 @@ pub mod browser;
 pub mod context;
 pub mod deploy;
 pub mod doctor;
+pub mod memory;
 pub mod events;
 pub mod init;
 pub mod project;

@@ -54,6 +54,10 @@ fn main() {
             args.remove(0);
             codra_cli::browser::execute_browser_command(&args)
         }
+        "memory" => {
+            args.remove(0);
+            codra_cli::memory::execute_memory_command(&args)
+        }
         "mcp-server" => mcp_server(),
         "run" => {
             args.remove(0);

@@ -552,6 +552,7 @@ dependencies = [
  "chrono",
  "codra-core",
  "codra-deploy",
+ "codra-memory",
  "codra-protocol",
  "codra-runtime",
  "codra-tools",
@@ -613,8 +614,10 @@ dependencies = [
 name = "codra-memory"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 1.0.69",
 ]
 
