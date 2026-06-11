@@ -1,5 +1,6 @@
 mod logs;
 mod plan;
+mod status;
 mod up;
 pub mod verify;
 
@@ -14,6 +15,7 @@ pub fn execute_deploy(args: &[String]) -> Result<(), String> {
         "plan" => plan::execute_plan(&args[1..]),
         "up" => up::execute_up(&args[1..]),
         "logs" => logs::execute_logs(&args[1..]),
+        "status" => status::execute_status(&args[1..]),
         "verify" => verify::execute_verify(&args[1..]),
         "" | "--help" | "-h" => {
             print_deploy_help();
@@ -34,6 +36,7 @@ fn print_deploy_help() {
     println!("  plan   Validate and render a safe deployment plan");
     println!("  up     Prepare or execute a local Docker deployment");
     println!("  logs   Show logs for a deployed service container");
+    println!("  status Show deployed services from the local deployment registry");
     println!("  verify Run Agent Browser smoke check against a deployed URL");
     println!();
     println!("Examples:");
@@ -41,5 +44,6 @@ fn print_deploy_help() {
     println!("  codra deploy up --dry-run");
     println!("  CODRA_DEPLOY_ENABLE_EXECUTE=1 codra deploy up --execute --service web");
     println!("  codra deploy logs --service web --tail 100");
+    println!("  codra deploy status --workspace . --json");
     println!("  codra deploy verify https://example.com --json");
 }
