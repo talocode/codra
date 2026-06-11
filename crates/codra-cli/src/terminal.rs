@@ -37,6 +37,8 @@ pub fn help() -> Result<(), String> {
     println!("  deploy logs --service <name>   Show logs for a deployed service container");
     println!("  deploy verify <url>            Run Agent Browser smoke check on a deployed URL");
     println!("  browser check <url>            Run a direct Agent Browser smoke check");
+    println!("  memory status [--task <id>]    Show local memory files and provider");
+    println!("  memory context [--query <q>]   Build a budgeted memory context bundle");
     println!("  run --task <task> [--jsonl]    Run a task with optional JSONL event stream");
     println!("                                 Tasks: review-pr, explain-issue, summarize-context");
     println!(

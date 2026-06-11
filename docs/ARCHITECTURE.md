@@ -14,7 +14,7 @@ Codra is the local agent within the Talocode ecosystem. All execution, file oper
 - **Tooling Engine (`codra-tools`)**: Provides filesystem operations, Git management, search indexing, and terminal sandboxing.
 - **Computer-Use Engine (`codra-browser`)**: A discrete sub-system utilizing CDP to spawn and control Chrome/Chromium, strictly separate from the Tauri interface webview.
 - **Shared Data Layer (`codra-protocol`, `codra-core` TaskStore)**: Shared TS/Rust schema types via `codra-protocol`; durable task lifecycle state via workspace-local JSON files (see Storage Extensibility).
-- **`codra-memory` (planned)**: Trait stub for future long-term memory; SQLite integration is not implemented yet.
+- **`codra-memory`**: Local-first `MemoryProvider` trait with `LocalMarkdownMemoryProvider` (markdown files under `.codra/` and `~/.codra/`). Agent-loop wiring and optional Supermemory/Postgres providers are planned.
 
 ## Desktop Shell Architecture
 
@@ -61,10 +61,21 @@ Responsible for launching targets, injecting JavaScript listeners, extracting DO
 - **Task state (current)**: `{workspace}/.codra/tasks/{task_id}.json` via `codra-core` `TaskStore`.
 - **Task events (current)**: `{workspace}/.codra/tasks/events/{task_id}.jsonl`.
 - **Checkpoints**: Written to `.codra/checkpoints` securely.
-- **Long-term metadata (planned)**: `~/.codra-agent/data.sqlite` via `codra-memory` — not wired to the task loop yet.
+- **Long-term memory (current)**: `codra-memory` `LocalMarkdownMemoryProvider` reads/writes `.codra/MEMORY.md`, `checkpoint.md`, `notes.md`, `tasks/<id>/*.md`, plus global `~/.codra/USER.md` and `MEMORY.md` (with `/root/USER.md` / `/root/MEMORY.md` fallback). CLI: `codra memory status`, `codra memory context`. Not wired to the agent loop yet.
+- **Indexed search (planned)**: SQLite FTS in `codra-memory`; optional `SupermemoryProvider` / `PostgresMemoryProvider`.
 - **Migration Compatibility**: Runtime reads legacy `.forge` workspace data when `.codra` data is not yet present.
 
 See [docs/AGENT_TASK_LOOP.md](AGENT_TASK_LOOP.md) for the implemented task-loop persistence model.
+
+### Memory rules (must-never)
+
+- Durable memory must not depend only on chat history.
+- Memory retrieval must be scoped (user / project / task) and budget-capped — never inject all files blindly.
+- Local-first operation must work without hosted memory or API keys.
+- Secrets must not be stored in memory files; the provider filters obvious secret patterns on read.
+- JSON task state leads; markdown memory follows (projections, not a second source of truth).
+
+See [docs/research/SUPERMEMORY_ARCHITECTURE_NOTES.md](research/SUPERMEMORY_ARCHITECTURE_NOTES.md) for provider abstraction design.
 
 ## Talocode Integration Direction (Planned)
 
