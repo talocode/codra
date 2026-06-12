@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish @codra/cli to npm (requires NPM_TOKEN secret)
+        description: Publish @talocode/codra to npm (requires NPM_TOKEN secret)
         type: boolean
         default: false
       include_darwin_x64:
@@ -108,7 +108,7 @@ jobs:
           if-no-files-found: error
 
   package-npm:
-    name: Package @codra/cli npm tarball
+    name: Package @talocode/codra npm tarball
     needs: [resolve-matrix, build-binaries]
     runs-on: ubuntu-latest
 
@@ -172,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: codra-cli-npm-tarball
-          path: packages/codra-npm-cli/codra-cli-*.tgz
+          path: packages/codra-npm-cli/talocode-codra-*.tgz
           if-no-files-found: error
 
       - name: Publish to npm (guarded)

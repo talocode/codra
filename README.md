@@ -117,11 +117,11 @@ See [crates/codra-cli/README.md](crates/codra-cli/README.md).
 
 ## Installable CLI roadmap
 
-The `@codra/cli` package is publish-ready work in progress and is not published to npm yet. Once maintainers verify the release tarball includes every selected platform binary, users will be able to install Codra globally:
+The `@talocode/codra` package is publish-ready work in progress and is not published to npm yet. Once maintainers verify the release tarball includes every selected platform binary, users will be able to install Codra globally:
 
 ```bash
-pnpm add -g @codra/cli
-npm install -g @codra/cli
+pnpm add -g @talocode/codra
+npm install -g @talocode/codra
 codra --help
 codra
 ```
@@ -135,7 +135,7 @@ cargo run -p codra-cli -- init
 cargo run -p codra-cli -- run --task summarize-context --jsonl
 ```
 
-The [`@codra/cli`](packages/codra-npm-cli/) package is a thin Node wrapper that spawns the native `codra` binary built from `codra-cli`. Multi-platform npm distribution targets Linux, macOS, and Windows; the manual [release workflow](.github/workflows/codra-cli-release.yml) packages platform binaries before guarded publish. npm publish remains off by default and must not run until tarball contents are verified (see [packages/codra-npm-cli/README.md](packages/codra-npm-cli/README.md)).
+The [`@talocode/codra`](packages/codra-npm-cli/) package is a thin Node wrapper that spawns the native `codra` binary built from `codra-cli`. Multi-platform npm distribution targets Linux, macOS, and Windows; the manual [release workflow](.github/workflows/codra-cli-release.yml) packages platform binaries before guarded publish. npm publish remains off by default and must not run until tarball contents are verified (see [packages/codra-npm-cli/README.md](packages/codra-npm-cli/README.md)).
 
 ## Roadmap
 
