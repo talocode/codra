@@ -1,16 +1,16 @@
-# @codra/cli
+# @talocode/codra
 
 npm package wrapper for the [Codra](https://github.com/talocode/codra) Rust CLI (`codra-cli` crate). Installs a global `codra` command that forwards to the native binary for your platform.
 
-**Status: publish-ready / coming soon. `@codra/cli` is not published to npm yet. Do not publish until the release tarball contains every selected platform binary.**
+**Status: publish-ready / coming soon. `@talocode/codra` is not published to npm yet. Do not publish until the release tarball contains every selected platform binary.**
 
 ## Installation
 
 When published, install globally with pnpm or npm:
 
 ```bash
-pnpm add -g @codra/cli
-npm install -g @codra/cli
+pnpm add -g @talocode/codra
+npm install -g @talocode/codra
 codra --help
 codra
 ```
@@ -75,7 +75,7 @@ Existing files are preserved unless `--force` is passed. `--dry-run` reports pla
 | `darwin-arm64` | `bin/native/darwin-arm64/codra` | `codra-darwin-arm64` |
 | `win32-x64` | `bin/native/win32-x64/codra.exe` | `codra-win32-x64.exe` |
 
-Optional per-platform npm packages may be added later if tarball size becomes too large. For now, all selected targets ship in `@codra/cli`.
+Optional per-platform npm packages may be added later if tarball size becomes too large. For now, all selected targets ship in `@talocode/codra`.
 
 ## Local development
 

@@ -20,6 +20,10 @@ fn main() {
     let result = match command {
         "" => welcome(),
         "--help" | "-h" | "help" => help(),
+        "--version" | "-V" | "version" => {
+            println!("codra {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        },
         "init" => {
             args.remove(0);
             execute_init(&args)

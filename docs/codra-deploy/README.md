@@ -89,6 +89,29 @@ CODRA_DEPLOY_ENABLE_EXECUTE=1 codra deploy up --execute --service web
 
 If either gate is missing, Codra prints planned Docker commands only and refuses execution.
 
+### `codra deploy status`
+
+Show deployed services from the local deployment registry.
+
+Codra stores deployment source of truth under `.codra/deployments/`:
+
+```text
+.codra/deployments/
+  services.json
+  deploys/
+    <deploy-id>.json
+```
+
+`services.json` tracks the current service record: container name, image, assigned port, current deploy id, and health URL metadata. Individual deploy runs are stored under `deploys/`.
+
+```bash
+codra deploy status
+codra deploy status --workspace . --json
+codra deploy status --service web
+```
+
+If no registry exists yet, status reports zero services. Future `codra deploy up --execute` runs will write into this registry.
+
 ### `codra deploy logs`
 
 Show logs for a deployed web or worker container.
@@ -168,8 +191,17 @@ Optional per-service fields in `codra.deploy.json`:
 - No rollback or update if a container already exists
 - Env values are redacted; execution passes only env keys present in the process environment
 
+## Deployment Registry (PR 1)
+
+- Local registry at `.codra/deployments/services.json`
+- Per-deploy records at `.codra/deployments/deploys/<deploy-id>.json`
+- `codra deploy status` reads the registry
+- `codra deploy up --execute` does **not** write the registry yet (PR 2)
+
 ## Not Yet Implemented
 
+- Registry writes from `deploy up`
+- `deploy restart` / `deploy stop`
 - Custom domains
 - Databases
 - Caddy routing

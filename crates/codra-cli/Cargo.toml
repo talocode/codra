@@ -1,6 +1,6 @@
 [package]
 name = "codra-cli"
-version = "0.1.0"
+version = "0.1.4"
 edition = "2021"
 
 [lib]
@@ -23,3 +23,5 @@ codra-memory = { path = "../codra-memory" }
 chrono = { workspace = true }
 reqwest = { workspace = true, features = ["blocking"] }
 tokio = { workspace = true }
+crossterm = "0.28"
+ratatui = "0.29"

@@ -7,6 +7,7 @@ mod docker_availability;
 mod docker_exec;
 mod naming;
 mod plan;
+pub mod registry;
 mod runner;
 mod validator;
 
@@ -36,6 +37,13 @@ pub use naming::{
 };
 pub use plan::{
     generate_plan, DeployPlan, DeployPlanService, DeployPlanUnsupportedFeature, DeployPlanWarning,
+};
+pub use registry::{
+    deploy_record_path, deployment_registry_root, empty_services_registry, list_services,
+    load_deploy_record, load_services_registry, save_deploy_record, save_services_registry,
+    services_registry_path, upsert_service_record, DeployRecord, DeployRecordStatus,
+    DeploymentServiceStatus, RegistryError, ServiceRecord, ServicesRegistry, DEPLOYMENTS_DIR,
+    REGISTRY_VERSION,
 };
 pub use runner::{
     ExecuteResult, LocalDockerRunner, LogsPlan, LogsStatus, RuntimeMode, RuntimePlan,

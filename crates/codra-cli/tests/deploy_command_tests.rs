@@ -182,6 +182,53 @@ fn cli_verify_requires_url() {
 }
 
 #[test]
+fn cli_status_returns_empty_registry_for_workspace_without_deployments() {
+    let dir = temp_dir();
+
+    let result = execute_deploy_command(&[
+        "status".to_string(),
+        "--workspace".to_string(),
+        dir.display().to_string(),
+        "--json".to_string(),
+    ]);
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn cli_status_lists_saved_registry_services() {
+    let dir = temp_dir();
+    let timestamp = "2026-06-11T00:00:00Z".to_string();
+    let mut registry = codra_deploy::empty_services_registry();
+    registry.updated_at = timestamp.clone();
+    registry.services.push(codra_deploy::ServiceRecord {
+        service_name: "web".to_string(),
+        project: "launchpix".to_string(),
+        container_name: "codra-launchpix-web".to_string(),
+        image: "codra-launchpix-web:latest".to_string(),
+        host_port: Some(3000),
+        internal_port: Some(3000),
+        current_deploy_id: Some("deploy_test_001".to_string()),
+        status: codra_deploy::DeploymentServiceStatus::Running,
+        health_check_path: Some("/api/health".to_string()),
+        health_check_url: Some("http://localhost:3000/api/health".to_string()),
+        created_at: timestamp.clone(),
+        updated_at: timestamp,
+    });
+    codra_deploy::save_services_registry(&dir, &registry).expect("seed registry");
+
+    let result = execute_deploy_command(&[
+        "status".to_string(),
+        "--workspace".to_string(),
+        dir.display().to_string(),
+        "--service".to_string(),
+        "web".to_string(),
+    ]);
+
+    assert!(result.is_ok());
+}
+
+#[test]
 fn cli_logs_resolves_expected_container_name() {
     let dir = temp_dir();
     let config = write_docker_config(&dir);
