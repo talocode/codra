@@ -1,0 +1,25 @@
+{
+  "name": "@codra/demo-video",
+  "private": true,
+  "version": "0.1.4",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion preview src/root.tsx",
+    "preview": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion preview src/root.tsx",
+    "build": "tsc -p tsconfig.json",
+    "render": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion render src/root.tsx CodraDemo dist/codra-demo-v0.1.4.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.329",
+    "@remotion/renderer": "^4.0.329",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.329"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/node": "^24.12.2",
+    "typescript": "^6.0.2"
+  }
+}
