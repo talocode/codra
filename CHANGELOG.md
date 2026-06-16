@@ -1,23 +1,28 @@
 # Changelog
 
+## 0.1.5
+
+### Added
+- Added `codra harness init`, `codra harness status`, and `codra harness doctor`.
+- Generated repo-local `.codra/harness/` guidance, commands, permissions, and release checklists.
+- Documented the project harness in `docs/HARNESS.md` and CLI docs.
+- Added a Remotion release video workflow and Codra v0.1.5 demo-video source.
+
 ## 0.1.4
 
 ### Fixed
-
 - Fixed npm executable metadata so npm preserves the `codra` binary mapping during publish.
 - Removed reliance on stale globally installed binaries during validation.
 
 ## 0.1.3
 
 ### Fixed
-
 - Fixed npm `bin` metadata so `npx @talocode/codra` executes the packaged Codra binary.
 - Prevented npx from falling back to stale globally installed binaries.
 
 ## 0.1.2
 
 ### Fixed
-
 - Fixed the npm package runtime version mismatch so `codra --version` matches the published package version.
 - Added validation to prevent stale bundled native binaries from being published.
 
