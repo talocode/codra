@@ -1,0 +1,7 @@
+{
+  "name": "project-summary",
+  "description": "Provides a summary of the project structure and key files",
+  "version": "0.1.0",
+  "commands": ["/project-summary"],
+  "permissions": ["read"]
+}

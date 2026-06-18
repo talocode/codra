@@ -1,0 +1,31 @@
+{
+  "name": "@talocode/codra-code",
+  "version": "0.1.0",
+  "description": "A local-first, open-source coding agent interface for real software work.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "node node_modules/tsx/dist/cli.mjs watch src/index.ts",
+    "start": "node node_modules/tsx/dist/cli.mjs src/index.ts",
+    "build": "tsc && node --experimental-strip-types dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/**/*.test.ts",
+    "validate": "npm run typecheck && npm run test"
+  },
+  "bin": {
+    "codra-code": "./src/index.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

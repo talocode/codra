@@ -1,0 +1,7 @@
+{
+  "name": "test-runner",
+  "description": "Runs project tests and reports results",
+  "version": "0.1.0",
+  "commands": ["/test"],
+  "permissions": ["read", "execute"]
+}
