@@ -7,6 +7,12 @@ A local-first, open-source coding agent for real software work.
 
 ## Download
 
+### From npm (Recommended)
+
+```bash
+npm install -g @talocode/codra-code
+```
+
 ### From GitHub Release
 
 Download the latest release from [GitHub Releases](https://github.com/talocode/codra/releases/latest).
@@ -14,52 +20,72 @@ Download the latest release from [GitHub Releases](https://github.com/talocode/c
 #### Linux
 
 ```bash
-# Download and extract
-tar -xzf codra-code-v0.1.4-linux-x64.tar.gz
-cd codra-code-v0.1.4-linux-x64
-
-# Run
+tar -xzf codra-code-v0.1.6-linux-x64.tar.gz
+cd codra-code-v0.1.6-linux-x64
 ./bin/codra-code --version
-./bin/codra-code --help
-./bin/codra-code --mock "/status"
 ```
 
 #### Windows
 
 ```powershell
-# Download and extract
-Expand-Archive codra-code-v0.1.4-windows-x64.zip
-cd codra-code-v0.1.4-windows-x64
-
-# Run
+Expand-Archive codra-code-v0.1.6-windows-x64.zip
+cd codra-code-v0.1.6-windows-x64
 .\bin\codra-code.cmd --version
-.\bin\codra-code.cmd --help
-.\bin\codra-code.cmd --mock "/status"
 ```
 
 #### macOS
 
 ```bash
-# Download and extract
-tar -xzf codra-code-v0.1.4-macos-arm64.tar.gz
-cd codra-code-v0.1.4-macos-arm64
-
-# Run
+tar -xzf codra-code-v0.1.6-macos-arm64.tar.gz
+cd codra-code-v0.1.6-macos-arm64
 ./bin/codra-code --version
-./bin/codra-code --help
-./bin/codra-code --mock "/status"
 ```
 
-**Note:** Portable releases require Node.js >= 18.0.0 installed on your system.
+**Note:** Portable releases require Node.js >= 18.0.0.
 
-### From npm
+## Authentication
+
+Codra Code requires a Tera account for authentication.
+
+### Login
 
 ```bash
-# Install globally
-npm install -g @talocode/codra-code
+codra-code login
+```
 
-# Or use npx (no install required)
-npx @talocode/codra-code --mock "/status"
+This will:
+1. Open your browser to Tera sign-in page
+2. Authenticate with your Tera account
+3. Store credentials locally at `~/.codra/auth.json`
+
+### Headless Login
+
+For SSH or headless environments:
+
+```bash
+codra-code login --no-browser
+```
+
+This prints a URL you can open manually.
+
+### Auth Status
+
+```bash
+codra-code auth status
+```
+
+### Logout
+
+```bash
+codra-code logout
+```
+
+### Local Development
+
+For testing with a local Tera server:
+
+```bash
+CODRA_AUTH_BASE_URL=http://localhost:3099 codra-code login --no-browser
 ```
 
 ## Quick Start
@@ -73,9 +99,6 @@ codra-code --mock
 ### Run with Ollama (Recommended for local-first)
 
 ```bash
-# Install Ollama: https://ollama.ai
-# Pull a model: ollama pull llama3.1
-
 export CODRA_PROVIDER=ollama
 export CODRA_MODEL=llama3.1
 codra-code start
@@ -92,25 +115,30 @@ codra-code start
 
 ## Features
 
-### Real Coding-Agent Workflow
+- **Tera authentication** - Secure account-based access
+- **Real provider execution** - OpenAI-compatible, Ollama, and mock providers
+- **Safe file editing** - Write, append, and patch files with confirmation
+- **Git integration** - Status, diff, branch, log, commit
+- **Plugin execution** - Built-in plugins for common tasks
+- **MCP server support** - Connect to MCP servers for extended tools
+- **Skills system** - Activate skills that influence agent behavior
+- **Session persistence** - Conversation history saved locally
+- **Non-interactive mode** - Execute commands from scripts
 
-- **File Editing**: Safe file editing with confirmation
-- **Git Integration**: Status, diff, branch, log, commit
-- **Command Execution**: Run commands with safety checks
-- **Plugin Execution**: Built-in plugins for common tasks
-- **MCP Support**: Connect to MCP servers for extended tools
-- **Skills**: Activate skills that influence agent behavior
-- **Sessions**: Persistent conversation history
+## Slash Commands
 
-### Slash Commands
+### Authentication
+- `/login` - Authenticate with Tera account
+- `/logout` - Sign out
+- `/auth` - Show authentication status
 
-#### General
+### General
 - `/help` - Show available commands
 - `/status` - Show project and provider status
 - `/doctor` - Check system health
 - `/config` - Show current configuration
 
-#### File Editing
+### File Editing
 - `/read <path>` - Read a file
 - `/read <path> --context` - Add file to context
 - `/write <path>` - Write file (with confirmation)
@@ -121,7 +149,7 @@ codra-code start
 - `/apply` - Apply pending edits
 - `/discard` - Discard pending edits
 
-#### Git
+### Git
 - `/git` - Git summary
 - `/git status` - Git status
 - `/git diff` - Git diff
@@ -129,38 +157,25 @@ codra-code start
 - `/git log` - Recent commits
 - `/git commit <msg>` - Commit changes
 
-#### Execution
+### Execution
 - `/run <command>` - Run command (with confirmation)
 - `/last` - Show last command result
 
-#### Skills & Plugins
+### Skills & Plugins
 - `/skills` - List skills
 - `/skill <name>` - Activate skill
 - `/plugins` - List plugins
 - `/plugin run <name>` - Run plugin
 
-#### MCP
+### MCP
 - `/mcp` - List MCP servers
 - `/mcp connect <name>` - Connect to server
 - `/mcp tools <name>` - List tools
 - `/mcp call <server> <tool>` - Call tool
 
-#### Watching
+### Watching
 - `/watch on` - Start file watching
 - `/watch off` - Stop watching
-
-### Non-Interactive Mode
-
-```bash
-# Execute a command
-codra-code --mock "/status"
-
-# Pipe input
-echo "/status" | codra-code --mock
-
-# With real provider
-CODRA_PROVIDER=ollama codra-code "explain this project"
-```
 
 ## Configuration
 
@@ -172,29 +187,54 @@ CODRA_PROVIDER=ollama codra-code "explain this project"
 | `CODRA_MODEL` | Model name | gpt-4o-mini |
 | `CODRA_API_KEY` | API key for provider | - |
 | `CODRA_BASE_URL` | Custom API base URL | - |
+| `CODRA_AUTH_BASE_URL` | Tera auth URL for local dev | https://teraai.chat |
+| `CODRA_AUTH_DEV_BYPASS` | Dev auth bypass (1 to enable) | - |
 
 ### Config Files
 
 - Project config: `.codra/config.json`
 - User config: `~/.codra/config.json`
+- Auth token: `~/.codra/auth.json`
 - MCP config: `.codra/mcp.json`
 
-## Safety
+## Security
 
-- Sensitive files (`.env`, `.npmrc`, private keys) are protected
+- Tera authentication required for protected commands
+- Token stored at `~/.codra/auth.json` with 600 permissions
 - API keys never stored in session files
 - Secrets redacted from logs
+- Sensitive files protected
 - Dangerous commands blocked
 - Confirmation prompts for file writes and command execution
 
-## Sessions
+## Troubleshooting
 
-Sessions are automatically saved to `.codra/sessions/`:
+### Browser did not open
 
-- JSONL format for easy parsing
-- Automatic secret redaction
-- No data leaves your machine
-- Full control over your data
+Use headless mode:
+```bash
+codra-code login --no-browser
+```
+
+### Token expired
+
+Run login again:
+```bash
+codra-code login
+```
+
+### Auth endpoint unavailable
+
+Check your network connection or try again later. The Tera auth service may be temporarily unavailable.
+
+### Running in SSH/Terminal
+
+Use headless mode:
+```bash
+codra-code login --no-browser
+```
+
+Then open the printed URL in a browser on another device.
 
 ## Development
 
@@ -217,9 +257,6 @@ npm run mock
 
 # Or start interactive mode
 npm start
-
-# Package release artifacts
-npm run package:release
 ```
 
 ## License
