@@ -347,6 +347,12 @@ We welcome contributions that align with Codra's focus on local-first, secure, a
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 
+## Support Talocode
+
+Talocode builds open-source workflow layers for builders: coding agents, learning tools, trading intelligence, video workflows, and local-first automation.
+
+If Codra helps you, you can support the work through [GitHub Sponsors](https://github.com/sponsors/Abdulmuiz44).
+
 ## License
 
 This project is licensed under the terms specified in the LICENSE file.
