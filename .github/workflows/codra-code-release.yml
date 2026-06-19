@@ -36,7 +36,7 @@ jobs:
 
       - name: Package release artifacts
         working-directory: apps/code
-        run: npm run package:release
+        run: npm run package:linux
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -88,7 +88,7 @@ jobs:
 
       - name: Package for ${{ matrix.platform }}-${{ matrix.arch }}
         working-directory: apps/code
-        run: node scripts/package-release.js ${{ matrix.platform }}
+        run: npx tsx scripts/package-release.ts ${{ matrix.platform }}
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
