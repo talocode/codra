@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { getConfig, updateConfig } from '../config';
+import { getConfig, updateConfig } from '../config.js';
 
 export async function providerCommand(args: string[]) {
   const config = getConfig();

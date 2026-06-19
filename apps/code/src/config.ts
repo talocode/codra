@@ -5,14 +5,23 @@ import * as os from 'os';
 const PROJECT_CONFIG = '.codra/config.json';
 const USER_CONFIG = path.join(os.homedir(), '.codra/config.json');
 
-let config = {
-  provider: process.env.CODRA_PROVIDER || 'openai',
-  model: process.env.CODRA_MODEL || 'gpt-4',
+export interface Config {
+  provider: string;
+  model: string;
+  apiKey: string;
+  baseUrl: string;
+  mockMode: boolean;
+}
+
+let config: Config = {
+  provider: process.env.CODRA_PROVIDER || 'mock',
+  model: process.env.CODRA_MODEL || 'gpt-4o-mini',
   apiKey: process.env.CODRA_API_KEY || '',
-  baseUrl: process.env.CODRA_BASE_URL || ''
+  baseUrl: process.env.CODRA_BASE_URL || '',
+  mockMode: process.env.CODRA_PROVIDER === 'mock' || !process.env.CODRA_API_KEY
 };
 
-export async function loadConfig() {
+export async function loadConfig(): Promise<Config> {
   try {
     if (fs.existsSync(USER_CONFIG)) {
       const userConf = JSON.parse(fs.readFileSync(USER_CONFIG, 'utf-8'));
@@ -22,16 +31,45 @@ export async function loadConfig() {
       const projectConf = JSON.parse(fs.readFileSync(PROJECT_CONFIG, 'utf-8'));
       config = { ...config, ...projectConf };
     }
+
+    if (process.argv.includes('--mock')) {
+      config.mockMode = true;
+      config.provider = 'mock';
+    }
+
+    if (config.provider === 'mock' || !config.apiKey) {
+      config.mockMode = true;
+    }
   } catch (e) {
     console.error('Error loading config:', e);
   }
-}
 
-export function getConfig() {
   return config;
 }
 
-export function updateConfig(updates: Partial<typeof config>) {
+export function getConfig(): Config {
+  return config;
+}
+
+export function updateConfig(updates: Partial<Config>): void {
   config = { ...config, ...updates };
-  // In a real implementation, we'd persist this to a file
+}
+
+export function isSecretsFile(filePath: string): boolean {
+  const secretPatterns = [
+    /\.env$/,
+    /\.env\.\w+$/,
+    /\.npmrc$/,
+    /\.pem$/,
+    /\.key$/,
+    /id_rsa/,
+    /id_ed25519/,
+    /credentials/,
+    /secret/,
+    /\.git\/credentials/,
+    /\.ssh\//,
+  ];
+
+  const basename = path.basename(filePath).toLowerCase();
+  return secretPatterns.some(pattern => pattern.test(basename) || pattern.test(filePath));
 }
