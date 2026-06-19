@@ -21,13 +21,34 @@ import { gitCommand } from './git.js';
 import { appendCommand, patchCommand, diffCommand, pendingCommand, applyCommand, discardCommand } from './file-edit.js';
 import { pluginCommand } from './plugin.js';
 import { watchCommand } from './watch.js';
+import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
+// Commands that don't require authentication
+const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path'];
 export async function handleCommand(input) {
     const parts = input.trim().split(' ');
     const command = parts[0].toLowerCase();
     const args = parts.slice(1);
+    // Check authentication for protected commands
+    if (!PUBLIC_COMMANDS.includes(command) && !isAuthenticated()) {
+        console.log(chalk.red('\n  Codra Code requires a Tera account.'));
+        console.log(chalk.gray('  Run: /login'));
+        console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
+        return;
+    }
     switch (command) {
         case '/help':
             await helpCommand();
+            break;
+        case '/login':
+            await startLogin();
+            break;
+        case '/logout':
+            await clearAuthToken();
+            console.log(chalk.green('\n  ✓ Signed out successfully.\n'));
+            break;
+        case '/auth':
+        case '/auth status':
+            await authStatus();
             break;
         case '/status':
             await statusCommand();
