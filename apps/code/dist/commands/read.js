@@ -17,6 +17,7 @@ export async function readCommand(args) {
         return;
     }
     const filePath = args[0];
+    const addToContext = args.includes('--context') || args.includes('-c');
     const fullPath = path.resolve(process.cwd(), filePath);
     if (isSecretsFile(fullPath)) {
         console.log(chalk.red(`\n  Access denied: ${filePath} is a sensitive file.\n`));
@@ -28,9 +29,10 @@ export async function readCommand(args) {
     }
     try {
         const content = fs.readFileSync(fullPath, 'utf-8');
-        if (args.includes('--context') || args.includes('-c')) {
+        if (addToContext) {
             addFileContext(`File: ${filePath}\n${content}`);
-            console.log(chalk.green(`\n  Added ${filePath} to context.\n`));
+            console.log(chalk.green(`\n  Added ${filePath} to context.`));
+            console.log(chalk.gray('  The file content will be included in your next prompt.\n'));
         }
         else {
             console.log(chalk.cyan(`\n  File: ${filePath}`));

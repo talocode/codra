@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { helpCommand } from './help.js';
 import { statusCommand } from './status.js';
 import { modelCommand } from './model.js';
@@ -15,11 +16,18 @@ import { sessionsCommand } from './sessions.js';
 import { sessionCommand } from './session.js';
 import { saveCommand } from './save.js';
 import { configCommand } from './config.js';
+import { doctorCommand } from './doctor.js';
+import { gitCommand } from './git.js';
+import { appendCommand, patchCommand, diffCommand, pendingCommand, applyCommand, discardCommand } from './file-edit.js';
+import { pluginCommand } from './plugin.js';
+import { watchCommand } from './watch.js';
 
 export async function handleCommand(input: string) {
-  const [command, ...args] = input.trim().split(' ');
+  const parts = input.trim().split(' ');
+  const command = parts[0].toLowerCase();
+  const args = parts.slice(1);
 
-  switch (command.toLowerCase()) {
+  switch (command) {
     case '/help':
       await helpCommand();
       break;
@@ -35,14 +43,23 @@ export async function handleCommand(input: string) {
     case '/config':
       await configCommand();
       break;
+    case '/doctor':
+      await doctorCommand();
+      break;
     case '/skills':
       await skillsCommand();
+      break;
+    case '/skill':
+      await skillCommand(args);
       break;
     case '/mcp':
       await mcpCommand(args);
       break;
     case '/plugins':
       await pluginsCommand();
+      break;
+    case '/plugin':
+      await pluginCommand(args);
       break;
     case '/files':
       await filesCommand();
@@ -53,8 +70,32 @@ export async function handleCommand(input: string) {
     case '/write':
       await writeCommand(args);
       break;
+    case '/append':
+      await appendCommand(args);
+      break;
+    case '/patch':
+      await patchCommand(args);
+      break;
+    case '/diff':
+      await diffCommand(args);
+      break;
+    case '/pending':
+      await pendingCommand();
+      break;
+    case '/apply':
+      await applyCommand();
+      break;
+    case '/discard':
+      await discardCommand();
+      break;
     case '/run':
       await runCommand(args);
+      break;
+    case '/git':
+      await gitCommand(args);
+      break;
+    case '/watch':
+      await watchCommand(args);
       break;
     case '/clear':
       await clearCommand();
@@ -71,7 +112,49 @@ export async function handleCommand(input: string) {
     case '/save':
       await saveCommand();
       break;
+    case '/last':
+      await lastCommand();
+      break;
     default:
       console.log(`Unknown command: ${command}. Type /help for available commands.`);
+  }
+}
+
+async function skillCommand(args: string[]) {
+  if (args.length === 0) {
+    console.log(chalk.gray('\n  Usage: /skill <name> | /skill clear\n'));
+    return;
+  }
+  
+  const { setActiveSkill, clearActiveSkill, getActiveSkill } = await import('../skills/active.js');
+  
+  if (args[0] === 'clear') {
+    clearActiveSkill();
+    console.log(chalk.green('\n  Active skill cleared\n'));
+    return;
+  }
+  
+  const skillName = args[0];
+  const { loadSkill } = await import('../skills/loader.js');
+  const skill = await loadSkill(skillName);
+  
+  if (skill) {
+    setActiveSkill(skillName, skill);
+    console.log(chalk.green(`\n  Active skill: ${skillName}\n`));
+  } else {
+    console.log(chalk.red(`\n  Skill not found: ${skillName}\n`));
+  }
+}
+
+async function lastCommand() {
+  const { getLastCommandResult } = await import('../session/commands.js');
+  const result = getLastCommandResult();
+  
+  if (result) {
+    console.log(chalk.cyan('\n  Last Command Result:'));
+    console.log(chalk.gray(`  Command: ${result.command}`));
+    console.log(chalk.gray(`  Output: ${result.output}`));
+  } else {
+    console.log(chalk.gray('\n  No command results yet\n'));
   }
 }

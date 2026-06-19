@@ -6,12 +6,13 @@ import { createProvider } from './providers/index.js';
 const program = new Command();
 program
     .name('codra-code')
-    .description('Codra Code: A local-first, open-source coding agent interface')
-    .version('0.1.1');
+    .description('Codra Code: A local-first, open-source coding agent for real software work')
+    .version('0.1.2');
 program
-    .option('--mock', 'Run in mock mode (no API calls)')
+    .option('--mock', 'Run in test mode (mock provider, no API calls)')
     .option('--provider <provider>', 'Override provider (mock, openai, ollama)')
-    .option('--model <model>', 'Override model name');
+    .option('--model <model>', 'Override model name')
+    .option('--yes', 'Skip confirmation prompts for non-interactive mode');
 program
     .command('start')
     .description('Start the Codra Code interface')
