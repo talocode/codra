@@ -1,5 +1,25 @@
 # Changelog
 
+## Codra Code v0.1.4
+
+Cross-platform downloadable CLI release packaging for Linux, Windows, and macOS.
+
+### Added
+
+- Cross-platform release packaging
+- Linux x64 release archive
+- Windows x64 release archive
+- macOS arm64 and x64 release archives
+- Portable CLI launcher scripts (bin/codra-code, bin/codra-code.cmd)
+- GitHub Actions release workflow
+- Release packaging script
+- Platform-specific README files
+
+### Changed
+
+- Improved release documentation
+- Updated package.json with packaging scripts
+
 ## Codra Code v0.1.3
 
 npm-ready public release with npx support, enhanced MCP transport, improved provider validation, and stronger documentation.
@@ -13,20 +33,6 @@ npm-ready public release with npx support, enhanced MCP transport, improved prov
 - Better documentation for Ollama and OpenAI setup
 - Professional demo video with captions
 - Node.js engine requirement (>=18.0.0)
-
-### Changed
-
-- Version bumped to 0.1.3
-- Updated package metadata for npm readiness
-- Enhanced README with npx/install instructions
-- Improved CHANGELOG format
-- Updated keywords for better discoverability
-
-### Fixed
-
-- Package repository URL format
-- Homepage URL format
-- TypeCheck and build validation
 
 ## Codra Code v0.1.2
 

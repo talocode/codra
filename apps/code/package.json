@@ -1,6 +1,6 @@
 {
   "name": "@talocode/codra-code",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A local-first, open-source coding agent for real software work.",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,7 +23,11 @@
     "test": "node --test src/**/*.test.ts",
     "validate": "npm run typecheck && npm run build",
     "mock": "node node_modules/tsx/dist/cli.mjs src/index.ts --mock",
-    "prepublishOnly": "npm run validate"
+    "prepublishOnly": "npm run validate",
+    "package:release": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts",
+    "package:linux": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts linux",
+    "package:windows": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts windows",
+    "package:macos": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts macos"
   },
   "repository": {
     "type": "git",

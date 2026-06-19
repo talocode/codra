@@ -5,19 +5,64 @@ A local-first, open-source coding agent for real software work.
 [![npm version](https://img.shields.io/npm/v/@talocode/codra-code.svg)](https://www.npmjs.com/package/@talocode/codra-code)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Quick Start
+## Download
 
-### Install globally
+### From GitHub Release
+
+Download the latest release from [GitHub Releases](https://github.com/talocode/codra/releases/latest).
+
+#### Linux
 
 ```bash
-npm install -g @talocode/codra-code
+# Download and extract
+tar -xzf codra-code-v0.1.4-linux-x64.tar.gz
+cd codra-code-v0.1.4-linux-x64
+
+# Run
+./bin/codra-code --version
+./bin/codra-code --help
+./bin/codra-code --mock "/status"
 ```
 
-### Or use npx (no install required)
+#### Windows
+
+```powershell
+# Download and extract
+Expand-Archive codra-code-v0.1.4-windows-x64.zip
+cd codra-code-v0.1.4-windows-x64
+
+# Run
+.\bin\codra-code.cmd --version
+.\bin\codra-code.cmd --help
+.\bin\codra-code.cmd --mock "/status"
+```
+
+#### macOS
 
 ```bash
+# Download and extract
+tar -xzf codra-code-v0.1.4-macos-arm64.tar.gz
+cd codra-code-v0.1.4-macos-arm64
+
+# Run
+./bin/codra-code --version
+./bin/codra-code --help
+./bin/codra-code --mock "/status"
+```
+
+**Note:** Portable releases require Node.js >= 18.0.0 installed on your system.
+
+### From npm
+
+```bash
+# Install globally
+npm install -g @talocode/codra-code
+
+# Or use npx (no install required)
 npx @talocode/codra-code --mock "/status"
 ```
+
+## Quick Start
 
 ### Run in test mode (no API key needed)
 
@@ -25,37 +70,24 @@ npx @talocode/codra-code --mock "/status"
 codra-code --mock
 ```
 
-## Provider Setup
-
-### Ollama (Recommended for local-first)
-
-1. Install Ollama: https://ollama.ai
-2. Pull a model: `ollama pull llama3.1`
-3. Run Codra Code:
+### Run with Ollama (Recommended for local-first)
 
 ```bash
+# Install Ollama: https://ollama.ai
+# Pull a model: ollama pull llama3.1
+
 export CODRA_PROVIDER=ollama
 export CODRA_MODEL=llama3.1
 codra-code start
 ```
 
-### OpenAI-Compatible API
-
-Works with OpenAI, Azure, and any OpenAI-compatible API.
+### Run with OpenAI-Compatible API
 
 ```bash
 export CODRA_PROVIDER=openai
 export CODRA_API_KEY=your-api-key
 export CODRA_MODEL=gpt-4o-mini
 codra-code start
-```
-
-### Test Mode (Mock)
-
-For testing and development without API calls:
-
-```bash
-codra-code --mock
 ```
 
 ## Features
@@ -185,6 +217,9 @@ npm run mock
 
 # Or start interactive mode
 npm start
+
+# Package release artifacts
+npm run package:release
 ```
 
 ## License

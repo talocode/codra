@@ -68,7 +68,7 @@ export async function startRepl(mockMode: boolean = false): Promise<void> {
   currentSession = createSession();
 
   const modeLabel = config.mockMode ? 'Test Mode' : 'Production';
-  console.log(chalk.cyan('\n  Codra Code v0.1.3'));
+  console.log(chalk.cyan('\n  Codra Code v0.1.4'));
   console.log(chalk.gray('  A local-first, open-source coding agent for real software work'));
   console.log(chalk.gray(`  Provider: ${config.provider} | Model: ${config.model} | Mode: ${modeLabel}`));
   console.log(chalk.gray('  Type "/help" for available commands.\n'));
