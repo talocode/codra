@@ -3,24 +3,66 @@ import { Command } from 'commander';
 import { startRepl } from './repl.js';
 import { loadConfig, getConfig } from './config.js';
 import { createProvider } from './providers/index.js';
+import { isAuthenticated, startLogin, clearAuthToken, authStatus, getAuthFilePath } from './auth/index.js';
 const program = new Command();
 program
     .name('codra-code')
     .description('Codra Code: A local-first, open-source coding agent for real software work')
-    .version('0.1.4');
+    .version('0.1.5');
 program
     .option('--mock', 'Run in test mode (mock provider, no API calls)')
     .option('--provider <provider>', 'Override provider (mock, openai, ollama)')
     .option('--model <model>', 'Override model name')
     .option('--yes', 'Skip confirmation prompts for non-interactive mode');
+// Auth commands (no auth required)
+program
+    .command('login')
+    .description('Authenticate with Tera account')
+    .action(async () => {
+    await startLogin();
+});
+program
+    .command('logout')
+    .description('Sign out and remove stored credentials')
+    .action(async () => {
+    await clearAuthToken();
+    console.log(chalk.green('\n  ✓ Signed out successfully.\n'));
+});
+program
+    .command('auth')
+    .description('Show authentication status')
+    .action(async () => {
+    await authStatus();
+});
+program
+    .command('auth-status')
+    .description('Show authentication status (alias)')
+    .action(async () => {
+    await authStatus();
+});
+program
+    .command('auth:token-path')
+    .description('Show auth token file path')
+    .action(() => {
+    console.log(chalk.gray(`\n  Auth token path: ${getAuthFilePath()}\n`));
+});
+// Start command
 program
     .command('start')
     .description('Start the Codra Code interface')
     .action(async (options) => {
     await loadConfig();
     applyOptions(options);
+    // Check auth
+    if (!isAuthenticated()) {
+        console.log(chalk.red('\n  Codra Code requires a Tera account.'));
+        console.log(chalk.gray('  Run: codra-code login'));
+        console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
+        return;
+    }
     startRepl();
 });
+// Default action
 program.action(async (options) => {
     await loadConfig();
     applyOptions(options);
@@ -38,6 +80,13 @@ program.action(async (options) => {
         await executeNonInteractive(input.trim());
     }
     else {
+        // Check auth for interactive mode
+        if (!isAuthenticated()) {
+            console.log(chalk.red('\n  Codra Code requires a Tera account.'));
+            console.log(chalk.gray('  Run: codra-code login'));
+            console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
+            return;
+        }
         startRepl();
     }
 });
@@ -59,6 +108,16 @@ function applyOptions(options) {
 }
 async function executeNonInteractive(input) {
     const config = getConfig();
+    // Check auth for protected commands
+    if (!input.startsWith('/login') && !input.startsWith('/logout') &&
+        !input.startsWith('/auth') && !input.startsWith('/help')) {
+        if (!isAuthenticated()) {
+            console.log(chalk.red('\n  Codra Code requires a Tera account.'));
+            console.log(chalk.gray('  Run: codra-code login'));
+            console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
+            process.exit(1);
+        }
+    }
     let provider;
     try {
         provider = createProvider(config.provider, {
@@ -88,4 +147,6 @@ async function executeNonInteractive(input) {
     }
     process.exit(0);
 }
+// Import chalk for auth messages
+import chalk from 'chalk';
 program.parse(process.argv);

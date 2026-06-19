@@ -1,6 +1,11 @@
 import chalk from 'chalk';
 export async function helpCommand() {
     console.log(chalk.cyan('\n  Codra Code Commands:'));
+    console.log(chalk.gray('  Authentication:'));
+    console.log(chalk.gray('    /login                 Authenticate with Tera account'));
+    console.log(chalk.gray('    /logout                Sign out and remove credentials'));
+    console.log(chalk.gray('    /auth                  Show authentication status'));
+    console.log('');
     console.log(chalk.gray('  General:'));
     console.log(chalk.gray('    /help                  Show this help message'));
     console.log(chalk.gray('    /status                Show project, provider, model, config status'));
