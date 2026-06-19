@@ -16,18 +16,31 @@ Completed Tera-backed CLI authentication with device auth endpoints, secure loca
 - Device auth endpoints (start, poll, approve)
 - SQL migration for device auth sessions
 - Success page at `/codra-code/auth/success`
+- Token validation on command execution
+- Auth flow validation tests
 
 ### Changed
 
 - Version bumped to 0.1.6
 - Dev bypass restricted to non-production environments
-- Token validation on command execution
 
 ### Security
 
 - Token stored at `~/.codra/auth.json` with 600 permissions
 - Token hash stored server-side
 - Protected commands require authentication
+- Tokens never printed in logs or output
+
+### Validated
+
+- ✓ Version returns 0.1.6
+- ✓ Help works without auth
+- ✓ Auth status works without auth
+- ✓ Logout works without auth
+- ✓ Protected commands require auth
+- ✓ Protected commands work with valid token
+- ✓ Token storage and retrieval works
+- ✓ Expired token detection works
 
 ## Codra Code v0.1.5
 
