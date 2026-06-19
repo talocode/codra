@@ -4,11 +4,12 @@ import { startRepl } from './repl.js';
 import { loadConfig, getConfig } from './config.js';
 import { createProvider } from './providers/index.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus, getAuthFilePath } from './auth/index.js';
+import chalk from 'chalk';
 const program = new Command();
 program
     .name('codra-code')
     .description('Codra Code: A local-first, open-source coding agent for real software work')
-    .version('0.1.5');
+    .version('0.1.6');
 program
     .option('--mock', 'Run in test mode (mock provider, no API calls)')
     .option('--provider <provider>', 'Override provider (mock, openai, ollama)')
@@ -18,8 +19,13 @@ program
 program
     .command('login')
     .description('Authenticate with Tera account')
-    .action(async () => {
-    await startLogin();
+    .option('--no-browser', 'Do not open browser, print URL instead')
+    .option('--auth-url <url>', 'Custom Tera auth URL for local development')
+    .action(async (options) => {
+    await startLogin({
+        noBrowser: options.noBrowser,
+        authUrl: options.authUrl
+    });
 });
 program
     .command('logout')
@@ -147,6 +153,4 @@ async function executeNonInteractive(input) {
     }
     process.exit(0);
 }
-// Import chalk for auth messages
-import chalk from 'chalk';
 program.parse(process.argv);
