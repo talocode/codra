@@ -2,6 +2,37 @@
 
 A local-first, open-source coding agent interface for real software work.
 
+## Quickstart
+
+### Install
+
+```bash
+npm install -g @talocode/codra-code
+```
+
+### Run in Mock Mode
+
+```bash
+codra-code --mock
+```
+
+### Run with OpenAI
+
+```bash
+export CODRA_PROVIDER=openai
+export CODRA_API_KEY=your-api-key
+export CODRA_MODEL=gpt-4o-mini
+codra-code start
+```
+
+### Run with Ollama
+
+```bash
+export CODRA_PROVIDER=ollama
+export CODRA_MODEL=llama3.1
+codra-code start
+```
+
 ## Features
 
 - Terminal coding-agent interface with slash commands
@@ -13,66 +44,21 @@ A local-first, open-source coding agent interface for real software work.
 - MCP integration
 - Plugin discovery
 
-## Installation
+## Mock Mode
+
+Default mode when no API key is configured. Uses simulated responses for testing and development.
 
 ```bash
-npm install -g @talocode/codra-code
-```
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development mode
-npm run dev
-
-# Build for production
-npm run build
-
-# Run type checking
-npm run typecheck
-
-# Run in mock mode
-npm run mock
-```
-
-## Usage
-
-```bash
-# Start interactive mode
-codra-code start
-
-# Run in mock mode
 codra-code --mock
-
-# Execute a command non-interactively
 codra-code --mock "/status"
-
-# Pipe input
-echo "/status" | codra-code --mock
+codra-code --mock "hello codra"
 ```
 
-## Configuration
-
-Codra Code uses environment variables for configuration:
-
-- `CODRA_PROVIDER` - Model provider (mock, openai, ollama)
-- `CODRA_MODEL` - Model name
-- `CODRA_API_KEY` - API key for the provider
-- `CODRA_BASE_URL` - Custom base URL for API
-
-### Mock Mode
-
-Default mode when no API key is configured. Uses simulated responses for testing.
-
-```bash
-export CODRA_PROVIDER=mock
-codra-code start
-```
+## Provider Setup
 
 ### OpenAI-Compatible Provider
+
+Works with OpenAI and any OpenAI-compatible API (Azure, etc.).
 
 ```bash
 export CODRA_PROVIDER=openai
@@ -83,11 +69,22 @@ codra-code start
 
 ### Ollama Provider
 
+Connect to a local Ollama instance.
+
 ```bash
 export CODRA_PROVIDER=ollama
 export CODRA_MODEL=llama3.1
 codra-code start
 ```
+
+### Configuration
+
+Configure via environment variables:
+
+- `CODRA_PROVIDER` - Provider name (mock, openai, ollama)
+- `CODRA_MODEL` - Model name
+- `CODRA_API_KEY` - API key for the provider
+- `CODRA_BASE_URL` - Custom base URL for API
 
 ## Commands
 
@@ -113,27 +110,22 @@ codra-code start
 
 ## Sessions
 
-Sessions are automatically saved to `.codra/sessions/` in JSONL format.
+Sessions are automatically saved to `.codra/sessions/` in JSONL format:
 
 - Each session contains timestamped entries
 - API keys and secrets are redacted
 - Use `/sessions` to list saved sessions
 - Use `/session` to view current session info
+- Use `/save` to force save the current session
 
-## File Context
+## Local Session Storage
 
-Read files and add them to the conversation context:
+Codra Code stores sessions locally in `.codra/sessions/`:
 
-```bash
-# Read a file
-/read src/index.ts
-
-# Add file to context
-/read src/index.ts --context
-
-# Ask questions about the file
-What does this file do?
-```
+- JSONL format for easy parsing
+- Automatic secret redaction
+- No data leaves your machine
+- Full control over your data
 
 ## Safety
 
@@ -141,6 +133,29 @@ What does this file do?
 - API keys are never stored in session files
 - Secrets are redacted from logs
 - Destructive actions require confirmation
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/talocode/codra.git
+cd codra
+
+# Install dependencies
+pnpm install
+
+# Navigate to code app
+cd apps/code
+
+# Install app dependencies
+npm install
+
+# Start in mock mode
+npm run mock
+
+# Or start interactive mode
+npm start
+```
 
 ## License
 

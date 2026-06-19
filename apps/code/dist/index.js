@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { startRepl } from './repl.js';
 import { loadConfig, getConfig } from './config.js';
@@ -23,17 +24,17 @@ program.action(async (options) => {
     await loadConfig();
     applyOptions(options);
     const args = program.args;
-    const isPiped = !process.stdin.isTTY;
-    if (isPiped) {
+    if (args.length > 0) {
+        const command = args.join(' ');
+        await executeNonInteractive(command);
+    }
+    else if (!process.stdin.isTTY) {
         let input = '';
         process.stdin.setEncoding('utf-8');
         for await (const chunk of process.stdin) {
             input += chunk;
         }
         await executeNonInteractive(input.trim());
-    }
-    else if (args.length > 0) {
-        await executeNonInteractive(args.join(' '));
     }
     else {
         startRepl();

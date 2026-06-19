@@ -16,6 +16,7 @@ Added real provider architecture, mock mode, Ollama/OpenAI-compatible provider s
 - Config command: `/config`
 - Secret protection and redaction
 - Improved help documentation
+- Demo script for showcasing features
 
 ### Changed
 
@@ -23,11 +24,13 @@ Added real provider architecture, mock mode, Ollama/OpenAI-compatible provider s
 - Version bumped to 0.1.1
 - Updated TypeScript configuration for NodeNext module resolution
 - Improved error handling
+- Updated README with quickstart and provider setup
 
 ### Fixed
 
 - Non-interactive mode now works with piped input
 - Fixed import paths for NodeNext module resolution
+- Fixed command handling in non-interactive mode
 
 ## Codra Code v0.1.0
 

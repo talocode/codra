@@ -3,22 +3,46 @@
   "version": "0.1.1",
   "description": "A local-first, open-source coding agent interface for real software work.",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
+  "main": "./dist/index.js",
+  "bin": {
+    "codra-code": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "skills",
+    "plugins"
+  ],
   "scripts": {
     "dev": "node node_modules/tsx/dist/cli.mjs watch src/index.ts",
     "start": "node node_modules/tsx/dist/cli.mjs src/index.ts",
-    "build": "tsc --outDir dist",
+    "build": "tsc --outDir dist && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "node --test src/**/*.test.ts",
-    "validate": "npm run typecheck",
-    "mock": "node node_modules/tsx/dist/cli.mjs src/index.ts --mock"
+    "validate": "npm run typecheck && npm run build",
+    "mock": "node node_modules/tsx/dist/cli.mjs src/index.ts --mock",
+    "prepublishOnly": "npm run validate"
   },
-  "bin": {
-    "codra-code": "./src/index.ts"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talocode/codra",
+    "directory": "apps/code"
   },
+  "keywords": [
+    "coding-agent",
+    "ai",
+    "local-first",
+    "cli",
+    "developer-tools"
+  ],
+  "author": "Talocode",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/talocode/codra/issues"
+  },
+  "homepage": "https://github.com/talocode/codra/tree/main/apps/code",
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
