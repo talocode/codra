@@ -1,5 +1,33 @@
 # Changelog
 
+## Codra Code v0.1.3
+
+npm-ready public release with npx support, enhanced MCP transport, improved provider validation, and stronger documentation.
+
+### Added
+
+- npx support for quick installation
+- Enhanced MCP transport with stdio support
+- Provider validation in `/doctor` command
+- Improved error messages for provider configuration
+- Better documentation for Ollama and OpenAI setup
+- Professional demo video with captions
+- Node.js engine requirement (>=18.0.0)
+
+### Changed
+
+- Version bumped to 0.1.3
+- Updated package metadata for npm readiness
+- Enhanced README with npx/install instructions
+- Improved CHANGELOG format
+- Updated keywords for better discoverability
+
+### Fixed
+
+- Package repository URL format
+- Homepage URL format
+- TypeCheck and build validation
+
 ## Codra Code v0.1.2
 
 Turns the CLI into a real local-first coding-agent workflow with provider execution, safe file editing, git integration, plugin execution, skills in prompts, sessions, and release validation.
@@ -20,20 +48,6 @@ Turns the CLI into a real local-first coding-agent workflow with provider execut
 - Command result tracking
 - Safety checks for dangerous commands
 - Non-interactive mode with `--yes` flag
-
-### Changed
-
-- Version bumped to 0.1.2
-- Mock mode labeled as "Test Mode"
-- Improved help command with organized sections
-- Enhanced status command with more details
-- Better error messages and user feedback
-
-### Fixed
-
-- Command handling in non-interactive mode
-- File context properly added to prompts
-- Provider validation and fallback behavior
 
 ## Codra Code v0.1.1
 

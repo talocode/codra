@@ -7,7 +7,7 @@ export async function statusCommand() {
   const config = getConfig();
   
   console.log(chalk.cyan('\n  Codra Code Status:'));
-  console.log(chalk.gray(`  Version: 0.1.2`));
+  console.log(chalk.gray(`  Version: 0.1.3`));
   console.log(chalk.gray(`  Provider: ${config.provider}`));
   console.log(chalk.gray(`  Model: ${config.model}`));
   console.log(chalk.gray(`  Mode: ${config.mockMode ? 'Test Mode (Mock)' : 'Production'}`));

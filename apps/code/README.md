@@ -2,64 +2,46 @@
 
 A local-first, open-source coding agent for real software work.
 
-## Quickstart
+[![npm version](https://img.shields.io/npm/v/@talocode/codra-code.svg)](https://www.npmjs.com/package/@talocode/codra-code)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Install
+## Quick Start
+
+### Install globally
 
 ```bash
 npm install -g @talocode/codra-code
 ```
 
-### Run in Test Mode (Mock)
+### Or use npx (no install required)
+
+```bash
+npx @talocode/codra-code --mock "/status"
+```
+
+### Run in test mode (no API key needed)
 
 ```bash
 codra-code --mock
-```
-
-### Run with OpenAI-Compatible Provider
-
-```bash
-export CODRA_PROVIDER=openai
-export CODRA_API_KEY=your-api-key
-export CODRA_MODEL=gpt-4o-mini
-codra-code start
-```
-
-### Run with Ollama
-
-```bash
-export CODRA_PROVIDER=ollama
-export CODRA_MODEL=llama3.1
-codra-code start
-```
-
-## Features
-
-- Real coding-agent workflow with provider execution
-- Safe file editing with confirmation
-- Git integration
-- Command execution with safety checks
-- Plugin execution
-- Skills integration with prompts
-- Session persistence
-- File watching
-- MCP support
-
-## Test Mode (Mock)
-
-Mock mode is for testing and development only. It uses simulated responses without making API calls.
-
-```bash
-codra-code --mock
-codra-code --mock "/status"
-codra-code --mock "hello codra"
 ```
 
 ## Provider Setup
 
-### OpenAI-Compatible Provider
+### Ollama (Recommended for local-first)
 
-Works with OpenAI and any OpenAI-compatible API (Azure, etc.).
+1. Install Ollama: https://ollama.ai
+2. Pull a model: `ollama pull llama3.1`
+3. Run Codra Code:
+
+```bash
+export CODRA_PROVIDER=ollama
+export CODRA_MODEL=llama3.1
+codra-code start
+```
+
+### OpenAI-Compatible API
+
+Works with OpenAI, Azure, and any OpenAI-compatible API.
 
 ```bash
 export CODRA_PROVIDER=openai
@@ -68,143 +50,74 @@ export CODRA_MODEL=gpt-4o-mini
 codra-code start
 ```
 
-### Ollama Provider
+### Test Mode (Mock)
 
-Connect to a local Ollama instance.
+For testing and development without API calls:
 
 ```bash
-export CODRA_PROVIDER=ollama
-export CODRA_MODEL=llama3.1
-codra-code start
+codra-code --mock
 ```
 
-### Configuration
+## Features
 
-Configure via environment variables:
+### Real Coding-Agent Workflow
 
-- `CODRA_PROVIDER` - Provider name (mock, openai, ollama)
-- `CODRA_MODEL` - Model name
-- `CODRA_API_KEY` - API key for the provider
-- `CODRA_BASE_URL` - Custom base URL for API
+- **File Editing**: Safe file editing with confirmation
+- **Git Integration**: Status, diff, branch, log, commit
+- **Command Execution**: Run commands with safety checks
+- **Plugin Execution**: Built-in plugins for common tasks
+- **MCP Support**: Connect to MCP servers for extended tools
+- **Skills**: Activate skills that influence agent behavior
+- **Sessions**: Persistent conversation history
 
-## Commands
+### Slash Commands
 
-### General
+#### General
 - `/help` - Show available commands
-- `/status` - Show project, provider, model status
+- `/status` - Show project and provider status
 - `/doctor` - Check system health
 - `/config` - Show current configuration
-- `/clear` - Clear session view
-- `/exit` - Quit Codra Code
 
-### Provider
-- `/model [name]` - Show or change current model
-- `/provider [name]` - Show or change current provider
-
-### File Editing
-- `/read <path>` - Read a local file
+#### File Editing
+- `/read <path>` - Read a file
 - `/read <path> --context` - Add file to context
-- `/write <path>` - Create/update a file (with confirmation)
-- `/append <path>` - Append content to file
-- `/patch <path>` - Apply patch to file
+- `/write <path>` - Write file (with confirmation)
+- `/append <path>` - Append to file
+- `/patch <path>` - Apply patch
 - `/diff <path>` - Show file diff
 - `/pending` - Show pending edits
 - `/apply` - Apply pending edits
 - `/discard` - Discard pending edits
 
-### Git
-- `/git` - Show git summary
-- `/git status` - Show git status
-- `/git diff` - Show git diff
-- `/git branch` - Show git branches
-- `/git log` - Show recent commits
+#### Git
+- `/git` - Git summary
+- `/git status` - Git status
+- `/git diff` - Git diff
+- `/git branch` - Git branches
+- `/git log` - Recent commits
 - `/git commit <msg>` - Commit changes
 
-### Execution
-- `/run <command>` - Run shell command (with confirmation)
+#### Execution
+- `/run <command>` - Run command (with confirmation)
 - `/last` - Show last command result
 
-### Skills & Plugins
-- `/skills` - List installed skills
-- `/skill <name>` - Activate a skill
-- `/skill clear` - Clear active skill
-- `/plugins` - List installed plugins
-- `/plugin <name>` - Show plugin info
-- `/plugin run <name>` - Run a plugin
+#### Skills & Plugins
+- `/skills` - List skills
+- `/skill <name>` - Activate skill
+- `/plugins` - List plugins
+- `/plugin run <name>` - Run plugin
 
-### MCP
+#### MCP
 - `/mcp` - List MCP servers
-- `/mcp status <name>` - Check server status
-- `/mcp tools <name>` - List server tools
-- `/mcp call <s> <t> <a>` - Call a tool
+- `/mcp connect <name>` - Connect to server
+- `/mcp tools <name>` - List tools
+- `/mcp call <server> <tool>` - Call tool
 
-### Watching
+#### Watching
 - `/watch on` - Start file watching
-- `/watch off` - Stop file watching
-- `/watch status` - Show watch status
+- `/watch off` - Stop watching
 
-### Sessions
-- `/sessions` - List saved sessions
-- `/session` - Show current session info
-- `/save` - Force save current session
-
-## File Editing Workflow
-
-1. Read a file: `/read src/index.ts`
-2. Add to context: `/read src/index.ts --context`
-3. Ask questions about the file
-4. Propose changes via agent response
-5. Apply changes: `/write` or `/append` or `/patch`
-6. Review pending edits: `/pending`
-7. Apply all: `/apply`
-8. Or discard: `/discard`
-
-## Git Integration
-
-```bash
-# Show git summary
-/git
-
-# Show status
-/git status
-
-# Show diff
-/git diff
-
-# Commit changes
-/git commit "feat: add new feature"
-```
-
-## Plugin Execution
-
-```bash
-# List plugins
-/plugins
-
-# Run a plugin
-/plugin run git-status
-/plugin run project-summary
-/plugin run test-runner
-```
-
-## Sessions
-
-Sessions are automatically saved to `.codra/sessions/`:
-
-- JSONL format for easy parsing
-- Automatic secret redaction
-- No data leaves your machine
-- Full control over your data
-
-## Safety
-
-- Sensitive files (`.env`, `.npmrc`, private keys) are protected
-- API keys never stored in session files
-- Secrets redacted from logs
-- Destructive commands blocked
-- Confirmation prompts for file writes and command execution
-
-## Non-Interactive Mode
+### Non-Interactive Mode
 
 ```bash
 # Execute a command
@@ -214,8 +127,42 @@ codra-code --mock "/status"
 echo "/status" | codra-code --mock
 
 # With real provider
-CODRA_PROVIDER=ollama CODRA_MODEL=llama3.1 codra-code "explain this project"
+CODRA_PROVIDER=ollama codra-code "explain this project"
 ```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CODRA_PROVIDER` | Provider name (mock, openai, ollama) | mock |
+| `CODRA_MODEL` | Model name | gpt-4o-mini |
+| `CODRA_API_KEY` | API key for provider | - |
+| `CODRA_BASE_URL` | Custom API base URL | - |
+
+### Config Files
+
+- Project config: `.codra/config.json`
+- User config: `~/.codra/config.json`
+- MCP config: `.codra/mcp.json`
+
+## Safety
+
+- Sensitive files (`.env`, `.npmrc`, private keys) are protected
+- API keys never stored in session files
+- Secrets redacted from logs
+- Dangerous commands blocked
+- Confirmation prompts for file writes and command execution
+
+## Sessions
+
+Sessions are automatically saved to `.codra/sessions/`:
+
+- JSONL format for easy parsing
+- Automatic secret redaction
+- No data leaves your machine
+- Full control over your data
 
 ## Development
 
