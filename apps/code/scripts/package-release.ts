@@ -176,7 +176,9 @@ function packagePlatform(platform: string, arch: string = 'x64') {
   const archivePath = path.join(RELEASE_DIR, archiveName);
   
   if (platform === 'windows') {
-    execSync(`cd ${RELEASE_DIR} && zip -r ${archiveName} ${path.basename(platformDir)}`, { stdio: 'inherit' });
+    // Use PowerShell's Compress-Archive on Windows
+    const sourcePath = path.join(RELEASE_DIR, path.basename(platformDir));
+    execSync(`powershell -Command "Compress-Archive -Path '${sourcePath}\\*' -DestinationPath '${archivePath}'"`, { stdio: 'inherit' });
   } else {
     execSync(`tar -czf ${archivePath} -C ${RELEASE_DIR} ${path.basename(platformDir)}`, { stdio: 'inherit' });
   }
