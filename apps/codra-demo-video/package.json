@@ -1,13 +1,14 @@
 {
   "name": "@codra/demo-video",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "scripts": {
-    "dev": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion preview src/root.tsx",
-    "preview": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion preview src/root.tsx",
+    "dev": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium remotion preview src/root.tsx",
+    "preview": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium remotion preview src/root.tsx",
     "build": "tsc -p tsconfig.json",
-    "render": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' remotion render src/root.tsx CodraDemo dist/codra-demo-v0.1.4.mp4"
+    "render": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium remotion render src/root.tsx CodraHarnessDemo dist/codra-demo-v0.1.5.mp4",
+    "demo:render": "NODE_OPTIONS='-r ./scripts/fix-network.cjs' PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium remotion render src/root.tsx CodraHarnessDemo dist/codra-v0.1.5-demo.mp4"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.329",

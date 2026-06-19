@@ -1,0 +1,99 @@
+name: Codra Code Release
+
+on:
+  push:
+    tags:
+      - 'codra-code-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/code/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/code
+        run: npm ci
+
+      - name: Build
+        working-directory: apps/code
+        run: npm run build
+
+      - name: Validate
+        working-directory: apps/code
+        run: npm run validate
+
+      - name: Package release artifacts
+        working-directory: apps/code
+        run: npm run package:linux
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/code/release/*.tar.gz
+            apps/code/release/*.zip
+            apps/code/*.tgz
+          fail_on_unmatched_files: false
+
+  build-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+          - os: macos-13
+            platform: macos
+            arch: x64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/code/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/code
+        run: npm ci
+
+      - name: Build
+        working-directory: apps/code
+        run: npm run build
+
+      - name: Package for ${{ matrix.platform }}-${{ matrix.arch }}
+        working-directory: apps/code
+        run: npx tsx scripts/package-release.ts ${{ matrix.platform }}
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/code/release/codra-code-*.tar.gz
+            apps/code/release/codra-code-*.zip
+          fail_on_unmatched_files: false

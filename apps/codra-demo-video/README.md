@@ -1,12 +1,12 @@
 # Codra Demo Video
 
-Standalone Remotion project for the Codra v0.1.4 launch video.
+Standalone Remotion project for the Codra v0.1.5 release video.
 
 ## What this contains
 
-- `src/video.tsx`: the 45-60 second demo composition
+- `src/video.tsx`: the 35-60 second demo composition
 - `src/root.tsx`: Remotion composition registration
-- `dist/codra-demo-v0.1.4.mp4`: render output target
+- `dist/codra-v0.1.5-demo.mp4`: render output target
 
 ## Install
 
@@ -25,18 +25,19 @@ pnpm --dir apps/codra-demo-video preview
 ## Render
 
 ```bash
-pnpm --dir apps/codra-demo-video render
+pnpm --dir apps/codra-demo-video demo:render
 ```
 
 The MP4 renders to:
 
 ```text
-apps/codra-demo-video/dist/codra-demo-v0.1.4.mp4
+apps/codra-demo-video/dist/codra-v0.1.5-demo.mp4
 ```
 
 ## Notes
 
 - 1920x1080
-- 30 fps
-- About 60 seconds total
+- 6 fps (render-friendly)
+- About 54 seconds total
 - Terminal-first, dark-mode styling
+- No voice required

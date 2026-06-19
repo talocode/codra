@@ -1,0 +1,7 @@
+{
+  "name": "git-status",
+  "description": "Shows git status of the current project",
+  "version": "0.1.0",
+  "commands": ["/git-status"],
+  "permissions": ["read"]
+}

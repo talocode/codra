@@ -1,0 +1,68 @@
+{
+  "name": "@talocode/codra-code",
+  "version": "0.1.4",
+  "description": "A local-first, open-source coding agent for real software work.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "codra-code": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "skills",
+    "plugins"
+  ],
+  "scripts": {
+    "dev": "node node_modules/tsx/dist/cli.mjs watch src/index.ts",
+    "start": "node node_modules/tsx/dist/cli.mjs src/index.ts",
+    "build": "tsc --outDir dist && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/**/*.test.ts",
+    "validate": "npm run typecheck && npm run build",
+    "mock": "node node_modules/tsx/dist/cli.mjs src/index.ts --mock",
+    "prepublishOnly": "npm run validate",
+    "package:release": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts",
+    "package:linux": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts linux",
+    "package:windows": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts windows",
+    "package:macos": "node node_modules/tsx/dist/cli.mjs scripts/package-release.ts macos"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/talocode/codra.git",
+    "directory": "apps/code"
+  },
+  "keywords": [
+    "coding-agent",
+    "ai",
+    "local-first",
+    "cli",
+    "developer-tools",
+    "ollama",
+    "openai",
+    "mcp",
+    "code-assistant"
+  ],
+  "author": "Talocode",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/talocode/codra/issues"
+  },
+  "homepage": "https://github.com/talocode/codra/tree/main/apps/code#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
