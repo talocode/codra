@@ -23,6 +23,10 @@ import { pluginCommand } from './plugin.js';
 import { watchCommand } from './watch.js';
 import { planCommand } from './plan.js';
 import { plansCommand } from './plans.js';
+import { threadCommand, threadsCommand } from './thread.js';
+import { contextCommand } from './context.js';
+import { permissionsCommand } from './permissions.js';
+import { activityCommand } from './activity.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 // Commands that don't require authentication
 const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path'];
@@ -141,6 +145,21 @@ export async function handleCommand(input) {
             break;
         case '/plans':
             await plansCommand();
+            break;
+        case '/thread':
+            await threadCommand(args);
+            break;
+        case '/threads':
+            await threadsCommand();
+            break;
+        case '/context':
+            await contextCommand(args);
+            break;
+        case '/permissions':
+            await permissionsCommand(args);
+            break;
+        case '/activity':
+            await activityCommand(args);
             break;
         default:
             console.log(`Unknown command: ${command}. Type /help for available commands.`);
