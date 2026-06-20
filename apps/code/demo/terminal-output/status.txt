@@ -1,0 +1,11 @@
+
+  Codra Code Status:
+  Version: 0.1.4
+  Provider: mock
+  Model: gpt-4o-mini
+  Mode: Test Mode (Mock)
+  Project: /root/projects/codra/apps/code
+  API Key: Not configured
+  Active Skill: None
+  Provider Status: Available
+

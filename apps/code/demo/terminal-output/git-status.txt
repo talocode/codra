@@ -1,0 +1,90 @@
+
+  Git Status:
+M ../../Cargo.lock
+ M ../../Cargo.toml
+ M ../desktop/src-tauri/gen/schemas/capabilities.json
+ M ../desktop/src-tauri/src/lib.rs
+ M ../../crates/codra-cli/Cargo.toml
+ M ../../crates/codra-cli/src/browser.rs
+ M ../../crates/codra-cli/src/context/github.rs
+ M ../../crates/codra-cli/src/context/local_git.rs
+ M ../../crates/codra-cli/src/context/mod.rs
+ M ../../crates/codra-cli/src/context/types.rs
+ M ../../crates/codra-cli/src/doctor.rs
+ M ../../crates/codra-cli/src/events.rs
+ M ../../crates/codra-cli/src/lib.rs
+ M ../../crates/codra-cli/src/main.rs
+ M ../../crates/codra-cli/src/memory.rs
+ M ../../crates/codra-cli/src/run.rs
+ M ../../crates/codra-cli/src/tasks/explain_issue.rs
+ M ../../crates/codra-cli/src/tasks/mod.rs
+ M ../../crates/codra-cli/src/tasks/review_pr.rs
+ M ../../crates/codra-cli/src/terminal.rs
+ M ../../crates/codra-cli/src/utils/ids.rs
+ M ../../crates/codra-cli/src/utils/mod.rs
+ M ../../crates/codra-cli/src/utils/safe_error.rs
+ M ../../crates/codra-cli/src/utils/time.rs
+ M ../../crates/codra-cli/tests/browser_command_tests.rs
+ M ../../crates/codra-cli/tests/deploy_command_tests.rs
+ M ../../crates/codra-cli/tests/github_actions_detection_test.rs
+ M ../../crates/codra-cli/tests/github_context_test.rs
+ M ../../crates/codra-cli/tests/memory_command_tests.rs
+ M ../../crates/codra-cli/tests/run_args_test.rs
+ M ../../crates/codra-cli/tests/run_failure_test.rs
+ M ../../crates/codra-core/Cargo.toml
+ M ../../crates/codra-core/src/provider_config.rs
+ M ../../crates/codra-core/src/task_store.rs
+ M ../../crates/codra-core/tests/task_loop_integration_tests.rs
+ M ../../crates/codra-deploy/src/agent_browser_exec.rs
+ M ../../crates/codra-deploy/src/browser.rs
+ M ../../crates/codra-deploy/src/cli.rs
+ M ../../crates/codra-deploy/src/cli/logs.rs
+ M ../../crates/codra-deploy/src/cli/plan.rs
+ M ../../crates/codra-deploy/src/cli/status.rs
+ M ../../crates/codra-deploy/src/cli/up.rs
+ M ../../crates/codra-deploy/src/cli/verify.rs
+ M ../../crates/codra-deploy/src/docker_availability.rs
+ M ../../crates/codra-deploy/src/docker_exec.rs
+ M ../../crates/codra-deploy/src/lib.rs
+ M ../../crates/codra-deploy/src/naming.rs
+ M ../../crates/codra-deploy/src/registry.rs
+ M ../../crates/codra-deploy/src/runner/docker.rs
+ M ../../crates/codra-deploy/src/runner/mod.rs
+ M ../../crates/codra-deploy/src/runner/runtime.rs
+ M ../../crates/codra-deploy/src/url_safety.rs
+ M ../../crates/codra-deploy/tests/browser_check_tests.rs
+ M ../../crates/codra-deploy/tests/deploy_core_tests.rs
+ M ../../crates/codra-deploy/tests/naming_tests.rs
+ M ../../crates/codra-deploy/tests/registry_tests.rs
+ M ../../crates/codra-deploy/tests/runner_tests.rs
+ M ../../crates/codra-deploy/tests/verify_tests.rs
+ M ../../crates/codra-memory/src/budget.rs
+ M ../../crates/codra-memory/src/error.rs
+ M ../../crates/codra-memory/src/lib.rs
+ M ../../crates/codra-memory/src/local.rs
+ M ../../crates/codra-memory/src/paths.rs
+ M ../../crates/codra-memory/src/provider.rs
+ M ../../crates/codra-memory/src/recall.rs
+ M ../../crates/codra-memory/src/secrets.rs
+ M ../../crates/codra-memory/src/types.rs
+ M ../../crates/codra-memory/tests/local_provider_tests.rs
+ M ../../packages/codra-npm-cli/README.md
+ M ../../packages/codra-npm-cli/bin/codra-lib.js
+ M ../../packages/codra-npm-cli/bin/codra.js
+ M ../../packages/codra-npm-cli/package.json
+ M ../../packages/codra-npm-cli/scripts/test.js
+ M ../../pnpm-lock.yaml
+?? ../../CODRA.md
+?? demo/terminal-output/
+?? ../../crates/codra-cli/src/provider.rs
+?? ../../crates/codra-cli/src/tui.rs
+?? ../../crates/codra-cli/src/understand.rs
+?? ../../docs/CLI.md
+?? ../../docs/HARNESS.md
+?? ../../docs/MODEL_PROVIDERS.md
+?? ../../docs/OSS_MODE.md
+?? ../../docs/SECURITY_MODEL_CONFIG.md
+?? ../../docs/UNDERSTAND.md
+?? ../../docs/design/
+?? ../../packages/codra-npm-cli/talocode-codra-0.1.5.tgz
+

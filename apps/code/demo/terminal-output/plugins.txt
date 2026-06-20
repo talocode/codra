@@ -1,0 +1,6 @@
+
+  Installed Plugins:
+  - git-status (/root/projects/codra/apps/code/plugins)
+  - project-summary (/root/projects/codra/apps/code/plugins)
+  - test-runner (/root/projects/codra/apps/code/plugins)
+

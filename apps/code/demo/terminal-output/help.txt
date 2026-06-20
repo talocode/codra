@@ -1,0 +1,19 @@
+Usage: codra-code [options] [command]
+
+Codra Code: A local-first, open-source coding agent for real software work
+
+Options:
+  -V, --version          output the version number
+  --mock                 Run in test mode (mock provider, no API calls)
+  --provider <provider>  Override provider (mock, openai, ollama)
+  --model <model>        Override model name
+  --yes                  Skip confirmation prompts for non-interactive mode
+  -h, --help             display help for command
+
+Commands:
+  login [options]        Authenticate with Tera account
+  logout                 Sign out and remove stored credentials
+  auth                   Show authentication status
+  auth-status            Show authentication status (alias)
+  auth:token-path        Show auth token file path
+  start                  Start the Codra Code interface

@@ -1,0 +1,7 @@
+
+  Installed Skills:
+  - codra-code-review (/root/projects/codra/apps/code/skills)
+  - codra-local-first (/root/projects/codra/apps/code/skills)
+  - codra-release (/root/projects/codra/apps/code/skills)
+  - codra-testing (/root/projects/codra/apps/code/skills)
+
