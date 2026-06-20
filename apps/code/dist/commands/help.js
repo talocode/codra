@@ -60,6 +60,15 @@ export async function helpCommand() {
     console.log(chalk.gray('    /watch off             Stop file watching'));
     console.log(chalk.gray('    /watch status          Show watch status'));
     console.log('');
+    console.log(chalk.gray('  Plans:'));
+    console.log(chalk.gray('    /plan <task>           Create a new plan'));
+    console.log(chalk.gray('    /plans                 List all plans'));
+    console.log(chalk.gray('    /plan show <id>        Show plan details'));
+    console.log(chalk.gray('    /plan approve <id>     Approve a plan'));
+    console.log(chalk.gray('    /plan reject <id>      Reject a plan'));
+    console.log(chalk.gray('    /plan run <id>         Run an approved plan'));
+    console.log(chalk.gray('    /plan status <id>      Show plan status'));
+    console.log('');
     console.log(chalk.gray('  Sessions:'));
     console.log(chalk.gray('    /sessions              List saved sessions'));
     console.log(chalk.gray('    /session               Show current session info'));

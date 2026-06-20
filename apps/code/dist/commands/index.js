@@ -21,6 +21,8 @@ import { gitCommand } from './git.js';
 import { appendCommand, patchCommand, diffCommand, pendingCommand, applyCommand, discardCommand } from './file-edit.js';
 import { pluginCommand } from './plugin.js';
 import { watchCommand } from './watch.js';
+import { planCommand } from './plan.js';
+import { plansCommand } from './plans.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 // Commands that don't require authentication
 const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path'];
@@ -133,6 +135,12 @@ export async function handleCommand(input) {
             break;
         case '/last':
             await lastCommand();
+            break;
+        case '/plan':
+            await planCommand(args);
+            break;
+        case '/plans':
+            await plansCommand();
             break;
         default:
             console.log(`Unknown command: ${command}. Type /help for available commands.`);
