@@ -351,7 +351,9 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 
 Talocode builds open-source workflow layers for builders: coding agents, learning tools, trading intelligence, video workflows, and local-first automation.
 
-If Codra helps you, you can support the work through [GitHub Sponsors](https://github.com/sponsors/Abdulmuiz44).
+If Codra helps you, you can support the work here:
+
+[![Sponsor Abdulmuiz44](https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Abdulmuiz44)
 
 ## License
 
