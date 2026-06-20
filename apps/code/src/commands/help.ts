@@ -102,6 +102,16 @@ export async function helpCommand() {
   console.log(chalk.gray('    /tools thread <id>     Show tool calls for thread'));
   console.log(chalk.gray('    /tools clear           Clear tool call logs'));
   console.log('');
+  console.log(chalk.gray('  Visual Plans:'));
+  console.log(chalk.gray('    /visual-plan <planId>  Create visual plan from plan'));
+  console.log(chalk.gray('    /visual-plan from-task <task>  Create visual plan from task'));
+  console.log(chalk.gray('    /visual-plans           List visual plans'));
+  console.log(chalk.gray('    /visual-plan show <id>  Show visual plan'));
+  console.log(chalk.gray('    /visual-plan export <id>  Export visual plan'));
+  console.log(chalk.gray('    /visual-plan approve <id>  Approve visual plan'));
+  console.log(chalk.gray('    /visual-plan reject <id>  Reject visual plan'));
+  console.log(chalk.gray('    /visual-recap <planId>  Create visual recap'));
+  console.log('');
   console.log(chalk.gray('  Sessions:'));
   console.log(chalk.gray('    /sessions              List saved sessions'));
   console.log(chalk.gray('    /session               Show current session info'));

@@ -28,6 +28,7 @@ import { contextCommand } from './context.js';
 import { permissionsCommand } from './permissions.js';
 import { activityCommand } from './activity.js';
 import { toolsCommand } from './tools.js';
+import { visualPlanCommand, visualPlansCommand } from './visualPlan.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 
 // Commands that don't require authentication
@@ -168,6 +169,15 @@ export async function handleCommand(input: string) {
       break;
     case '/tools':
       await toolsCommand(args);
+      break;
+    case '/visual-plan':
+      await visualPlanCommand(args);
+      break;
+    case '/visual-plans':
+      await visualPlansCommand();
+      break;
+    case '/visual-recap':
+      await visualPlanCommand(args);
       break;
     default:
       console.log(`Unknown command: ${command}. Type /help for available commands.`);
