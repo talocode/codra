@@ -9,7 +9,7 @@ const program = new Command();
 program
     .name('codra-code')
     .description('Codra Code: A local-first, open-source coding agent for real software work')
-    .version('0.2.1');
+    .version('0.2.2');
 program
     .option('--mock', 'Run in test mode (mock provider, no API calls)')
     .option('--provider <provider>', 'Override provider (mock, openai, ollama)')

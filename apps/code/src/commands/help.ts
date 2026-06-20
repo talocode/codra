@@ -95,6 +95,13 @@ export async function helpCommand() {
   console.log(chalk.gray('    /activity week         This week\'s activity'));
   console.log(chalk.gray('    /activity export       Export activity'));
   console.log('');
+  console.log(chalk.gray('  Tool Calls:'));
+  console.log(chalk.gray('    /tools log             Show recent tool calls'));
+  console.log(chalk.gray('    /tools recent          Show recent tool calls'));
+  console.log(chalk.gray('    /tools show <id>       Show tool call details'));
+  console.log(chalk.gray('    /tools thread <id>     Show tool calls for thread'));
+  console.log(chalk.gray('    /tools clear           Clear tool call logs'));
+  console.log('');
   console.log(chalk.gray('  Sessions:'));
   console.log(chalk.gray('    /sessions              List saved sessions'));
   console.log(chalk.gray('    /session               Show current session info'));
