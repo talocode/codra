@@ -193,6 +193,14 @@ npm run mock
 npm start
 ```
 
+## Support Talocode
+
+Talocode builds open-source workflow layers for builders: coding agents, learning tools, trading intelligence, video workflows, and local-first automation.
+
+If Codra Code helps you, you can support the work here:
+
+[![Sponsor Abdulmuiz44](https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Abdulmuiz44)
+
 ## Roadmap
 
 - [ ] Real-time file watching
