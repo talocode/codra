@@ -1,6 +1,6 @@
 {
   "name": "@talocode/codra-code",
-  "version": "0.1.6",
+  "version": "0.2.3",
   "description": "A local-first, open-source coding agent for real software work.",
   "type": "module",
   "main": "./dist/index.js",

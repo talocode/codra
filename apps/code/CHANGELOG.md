@@ -1,6 +1,6 @@
 # Changelog
 
-## Codra Code v0.1.6 — Interactive TUI Home Screen
+## Codra Code v0.2.3 — Interactive TUI Home Screen
 
 Added premium interactive TUI home screen for Codra Code's interactive mode. Features branded ASCII header, status display, command hints, and graceful fallback.
 
@@ -30,7 +30,7 @@ Added premium interactive TUI home screen for Codra Code's interactive mode. Fea
 - Non-interactive command behavior unchanged
 - Auth flow unchanged
 
-## Codra Code v0.1.6 — Skills Discovery & Recommendation
+## Codra Code v0.2.3 — Skills Discovery & Recommendation
 
 Added skill discovery, recommendation, and activation system. Skills are discovered from local paths, recommended based on task type, and their context is injected into provider prompts with protection against context bloat.
 
