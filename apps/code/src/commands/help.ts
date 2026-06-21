@@ -52,6 +52,13 @@ export async function helpCommand() {
   console.log(chalk.gray('    /skills clear          Clear all active skills'));
   console.log(chalk.gray('    /skills paths          Show skill search paths'));
   console.log('');
+  console.log(chalk.gray('  Setup:'));
+  console.log(chalk.gray('    /setup                 Analyze project and recommend setup'));
+  console.log(chalk.gray('    /setup analyze         Detect project stack only'));
+  console.log(chalk.gray('    /setup recommend       Generate recommendations'));
+  console.log(chalk.gray('    /setup status          Show last setup report'));
+  console.log(chalk.gray('    /setup apply           Preview applying safe changes'));
+  console.log('');
   console.log(chalk.gray('  Plugins:'));
   console.log(chalk.gray('    /plugins               List installed plugins'));
   console.log(chalk.gray('    /plugin <name>         Show plugin info'));

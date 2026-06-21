@@ -29,10 +29,11 @@ import { permissionsCommand } from './permissions.js';
 import { activityCommand } from './activity.js';
 import { toolsCommand } from './tools.js';
 import { visualPlanCommand, visualPlansCommand } from './visualPlan.js';
+import { setupCommand } from './setup.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 
 // Commands that don't require authentication
-const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path', '/skills', '/skill'];
+const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path', '/skills', '/skill', '/setup'];
 
 export async function handleCommand(input: string) {
   const parts = input.trim().split(' ');
@@ -178,6 +179,9 @@ export async function handleCommand(input: string) {
       break;
     case '/visual-recap':
       await visualPlanCommand(args);
+      break;
+    case '/setup':
+      await setupCommand(args);
       break;
     default:
       console.log(`Unknown command: ${command}. Type /help for available commands.`);

@@ -141,7 +141,8 @@ async function executeNonInteractive(input: string): Promise<void> {
   // Check auth for protected commands
   if (!input.startsWith('/login') && !input.startsWith('/logout') && 
       !input.startsWith('/auth') && !input.startsWith('/help') &&
-      !input.startsWith('/skills') && !input.startsWith('/skill')) {
+      !input.startsWith('/skills') && !input.startsWith('/skill') &&
+      !input.startsWith('/setup')) {
     if (!isAuthenticated()) {
       console.log(chalk.red('\n  Codra Code requires a Tera account.'));
       console.log(chalk.gray('  Run: codra-code login'));
