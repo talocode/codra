@@ -2,6 +2,20 @@
 
 ## What's New
 
+### Interactive TUI Home Screen
+- Premium dark terminal interface with branded ASCII header
+- Shows current provider, model, permission level, and active skills
+- Composer placeholder with command hints
+- Keyboard shortcut hints and onboarding tips
+- Auto-detects terminal capabilities; falls back to classic REPL
+- Use `--tui` or `--no-tui` flags to control behavior
+
+### Skills Discovery & Recommendation
+- Discover skills from `.codra/skills/`, `~/.codra/skills/`, and configured paths
+- Recommend skills based on task type (debugging, UI, video, planning, etc.)
+- Activate multiple skills with context protection (max 3, max 12000 chars)
+- Skills context injected into provider prompts automatically
+
 ### Tera Authentication
 - `codra-code login` - Authenticate with Tera account
 - `codra-code logout` - Sign out and remove credentials
@@ -29,6 +43,13 @@
 - `codra-code logout` - Sign out
 - `codra-code auth` - Show auth status
 - `/login`, `/logout`, `/auth` - Slash commands
+- `/skills` - List discovered skills
+- `/skill <name>` - Activate a skill
+- `/skills recommend <task>` - Recommend skills for a task
+- `/skills active` - Show active skills
+- `/skills use <n1,n2>` - Activate multiple skills
+- `/skills clear` - Clear all active skills
+- `/skills paths` - Show skill search paths
 
 ### Configuration
 - `CODRA_AUTH_BASE_URL` - Custom Tera auth URL

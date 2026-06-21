@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 const SKILL_DIRS = [
     path.join(process.cwd(), 'skills'),
     path.join(process.cwd(), '.codra/skills'),
-    path.join(require('os').homedir(), '.codra/skills')
+    path.join(os.homedir(), '.codra/skills')
 ];
 export async function loadSkill(name) {
     for (const dir of SKILL_DIRS) {

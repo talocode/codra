@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { getConfig } from '../config.js';
 import { createProvider } from '../providers/index.js';
-import { getActiveSkill } from '../skills/active.js';
+import { getActiveSkills } from '../skills/active.js';
 export async function statusCommand() {
     const config = getConfig();
     console.log(chalk.cyan('\n  Codra Code Status:'));
@@ -11,12 +11,12 @@ export async function statusCommand() {
     console.log(chalk.gray(`  Mode: ${config.mockMode ? 'Test Mode (Mock)' : 'Production'}`));
     console.log(chalk.gray(`  Project: ${process.cwd()}`));
     console.log(chalk.gray(`  API Key: ${config.apiKey ? '****' : 'Not configured'}`));
-    const activeSkill = getActiveSkill();
-    if (activeSkill) {
-        console.log(chalk.gray(`  Active Skill: ${activeSkill.name}`));
+    const activeSkills = getActiveSkills();
+    if (activeSkills.length > 0) {
+        console.log(chalk.gray(`  Active Skills: ${activeSkills.map(s => s.name).join(', ')}`));
     }
     else {
-        console.log(chalk.gray('  Active Skill: None'));
+        console.log(chalk.gray('  Active Skills: None'));
     }
     try {
         const provider = createProvider(config.provider, {

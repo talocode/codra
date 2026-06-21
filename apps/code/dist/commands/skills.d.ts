@@ -1,1 +1,1 @@
-export declare function skillsCommand(): Promise<void>;
+export declare function skillsCommand(args: string[]): Promise<void>;

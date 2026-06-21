@@ -1,11 +1,13 @@
 import { getConfig } from '../config.js';
-import { getActiveSkill } from '../skills/active.js';
+import { getActiveSkills } from '../skills/active.js';
+import { recommendSkills } from '../skills/recommender.js';
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 export function createPlan(task) {
     const config = getConfig();
-    const activeSkill = getActiveSkill();
+    const activeSkills = getActiveSkills();
+    const recommendedSkills = recommendSkills(task);
     const steps = [
         {
             id: generateId(),
@@ -48,7 +50,7 @@ export function createPlan(task) {
         updatedAt: new Date().toISOString(),
         provider: config.provider,
         model: config.model,
-        activeSkill: activeSkill?.name || null,
+        activeSkill: activeSkills.length > 0 ? activeSkills[0].name : null,
         projectPath: process.cwd(),
         steps,
         risks: ['Potential breaking changes', 'File modifications may affect other code'],
@@ -56,6 +58,6 @@ export function createPlan(task) {
         filesToModify: [],
         commandsToRun: [],
         validation: ['Run build', 'Run tests if available'],
-        notes: []
+        notes: recommendedSkills.length > 0 ? [`Recommended skills: ${recommendedSkills.join(', ')}`] : []
     };
 }

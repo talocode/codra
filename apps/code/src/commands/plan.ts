@@ -2,6 +2,8 @@ import chalk from 'chalk';
 import { createPlan } from '../plans/planner.js';
 import { savePlan, getPlan, listPlans } from '../plans/store.js';
 import { formatPlan } from '../plans/format.js';
+import { recommendSkills } from '../skills/recommender.js';
+import { formatSkillRecommendations } from '../skills/format.js';
 
 export async function planCommand(args: string[]) {
   if (args.length === 0) {
@@ -96,6 +98,14 @@ export async function planCommand(args: string[]) {
       const plan = createPlan(task);
       savePlan(plan);
       console.log(formatPlan(plan));
+
+      // Show skill recommendations
+      const recommended = recommendSkills(task);
+      if (recommended.length > 0) {
+        console.log(formatSkillRecommendations(recommended, task));
+        console.log(chalk.gray('  Skill recommendations are suggestions. Use /skills use <name> to activate.'));
+      }
+
       console.log(chalk.green(`\n  Plan created: ${plan.id}`));
       console.log(chalk.gray('  Use /plan approve <id> to approve and /plan run <id> to execute.\n'));
       break;

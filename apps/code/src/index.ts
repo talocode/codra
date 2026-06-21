@@ -16,7 +16,9 @@ program
   .option('--mock', 'Run in test mode (mock provider, no API calls)')
   .option('--provider <provider>', 'Override provider (mock, openai, ollama)')
   .option('--model <model>', 'Override model name')
-  .option('--yes', 'Skip confirmation prompts for non-interactive mode');
+  .option('--yes', 'Skip confirmation prompts for non-interactive mode')
+  .option('--tui', 'Show interactive TUI home screen')
+  .option('--no-tui', 'Use classic REPL interface');
 
 // Auth commands (no auth required)
 program
@@ -76,7 +78,9 @@ program
       return;
     }
 
-    startRepl();
+    const { canShowTui } = await import('./ui/home.js');
+    const useTui = options.tui !== false && canShowTui();
+    startRepl(false, useTui);
   });
 
 // Default action
@@ -84,7 +88,7 @@ program.action(async (options) => {
   await loadConfig();
   applyOptions(options);
 
-  const args = program.args;
+  const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
 
   if (args.length > 0) {
     const command = args.join(' ');
@@ -105,7 +109,9 @@ program.action(async (options) => {
       return;
     }
 
-    startRepl();
+    const { canShowTui } = await import('./ui/home.js');
+    const useTui = options.tui !== false && canShowTui();
+    startRepl(false, useTui);
   }
 });
 
@@ -134,7 +140,8 @@ async function executeNonInteractive(input: string): Promise<void> {
   
   // Check auth for protected commands
   if (!input.startsWith('/login') && !input.startsWith('/logout') && 
-      !input.startsWith('/auth') && !input.startsWith('/help')) {
+      !input.startsWith('/auth') && !input.startsWith('/help') &&
+      !input.startsWith('/skills') && !input.startsWith('/skill')) {
     if (!isAuthenticated()) {
       console.log(chalk.red('\n  Codra Code requires a Tera account.'));
       console.log(chalk.gray('  Run: codra-code login'));
@@ -175,4 +182,7 @@ async function executeNonInteractive(input: string): Promise<void> {
   process.exit(0);
 }
 
-program.parse(process.argv);
+program.parseAsync(process.argv).then(() => {
+  if (process.stdin.isTTY) return;
+  process.exit(0);
+}).catch(() => process.exit(1));

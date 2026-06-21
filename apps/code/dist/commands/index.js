@@ -31,7 +31,7 @@ import { toolsCommand } from './tools.js';
 import { visualPlanCommand, visualPlansCommand } from './visualPlan.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 // Commands that don't require authentication
-const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path'];
+const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path', '/skills', '/skill'];
 export async function handleCommand(input) {
     const parts = input.trim().split(' ');
     const command = parts[0].toLowerCase();
@@ -74,7 +74,7 @@ export async function handleCommand(input) {
             await doctorCommand();
             break;
         case '/skills':
-            await skillsCommand();
+            await skillsCommand(args);
             break;
         case '/skill':
             await skillCommand(args);

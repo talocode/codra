@@ -1,5 +1,72 @@
 # Changelog
 
+## Codra Code v0.1.6 — Interactive TUI Home Screen
+
+Added premium interactive TUI home screen for Codra Code's interactive mode. Features branded ASCII header, status display, command hints, and graceful fallback.
+
+### Added
+
+- TUI home screen with branded ASCII logo header
+- Status line showing mode, provider/model, and permission level
+- Active skills indicator
+- Composer placeholder with command hint
+- Keyboard shortcut hints (`/`, `tab`, `@`, `ctrl+c`)
+- Onboarding tips (rotating daily)
+- Project path and version footer
+- `--tui` flag to force TUI mode
+- `--no-tui` flag to use classic REPL
+- Terminal capability detection (TTY, width, CI)
+- Graceful fallback to classic text REPL when TUI unavailable
+
+### Changed
+
+- Interactive mode defaults to TUI when terminal supports it
+- Classic REPL available via `--no-tui` flag
+- Non-interactive commands unaffected
+
+### Preserved
+
+- All existing slash commands unchanged
+- Non-interactive command behavior unchanged
+- Auth flow unchanged
+
+## Codra Code v0.1.6 — Skills Discovery & Recommendation
+
+Added skill discovery, recommendation, and activation system. Skills are discovered from local paths, recommended based on task type, and their context is injected into provider prompts with protection against context bloat.
+
+### Added
+
+- Skill discovery from `.codra/skills/`, `~/.codra/skills/`, and configured paths
+- Skill metadata extraction from SKILL.md files (description, tags, products)
+- Task-to-skill recommendation mapping for debugging, UI, video, planning, search, and more
+- `/skills` — list discovered skills
+- `/skill <name>` — activate a skill
+- `/skills recommend <task>` — recommend skills for a task
+- `/skills active` — show active skills
+- `/skills use <n1,n2>` — activate multiple skills
+- `/skills clear` — clear all active skills
+- `/skills paths` — show skill search paths and config
+- Multi-skill activation with context protection (max 3 active, max 12000 chars)
+- Skill context automatically injected into provider prompts
+- Skill recommendations shown in `/plan <task>` output
+- Active skills shown in `/status`
+- `.codra/skills.json` config (paths, active, autoRecommend, maxActiveSkills, maxSkillContextChars)
+
+### Changed
+
+- Active skill system now supports multiple concurrent skills
+- `/status` shows all active skills
+- `/plan` shows skill recommendations when creating plans
+- `/thread new` records active skills in thread metadata
+- Help command updated with skills subcommands
+
+### Security
+
+- Context bloat protection: max 3 active skills, max 12000 chars total
+- Truncation of long skill content
+- No network access required for skill discovery
+- No external repo references in skill metadata
+
 ## Codra Code v0.1.6
 
 Completed Tera-backed CLI authentication with device auth endpoints, secure local token storage, protected command gating, and auth status/logout commands.

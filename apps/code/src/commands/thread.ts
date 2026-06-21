@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { Thread } from '../threads/types.js';
 import { saveThread, getThread, listThreads } from '../threads/store.js';
 import { getConfig } from '../config.js';
-import { getActiveSkill } from '../skills/active.js';
+import { getActiveSkills } from '../skills/active.js';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -24,7 +24,7 @@ export async function threadCommand(args: string[]) {
       }
       const title = args.slice(1).join(' ');
       const config = getConfig();
-      const activeSkill = getActiveSkill();
+      const activeSkills = getActiveSkills();
       
       const thread: Thread = {
         id: generateId(),
@@ -37,7 +37,7 @@ export async function threadCommand(args: string[]) {
         toolCallCount: 0,
         activeProvider: config.provider,
         activeModel: config.model,
-        activeSkill: activeSkill?.name || null,
+        activeSkill: activeSkills.length > 0 ? activeSkills[0].name : null,
         linkedPlanId: null,
         loadedInstructionFiles: []
       };

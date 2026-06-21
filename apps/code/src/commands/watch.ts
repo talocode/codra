@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { saveSessionEntry } from '../session/index.js';
-import { getCurrentSession } from '../repl.js';
+import { getCurrentSession } from '../session/state.js';
 
 let watcher: fs.FSWatcher | null = null;
 let watchedFiles: string[] = [];
