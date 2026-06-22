@@ -3,6 +3,45 @@ import * as path from 'path';
 import * as os from 'os';
 import chalk from 'chalk';
 
+const MAX_DEBUG_BODY_LENGTH = 200;
+
+async function readJsonResponse(response: Response, context: string): Promise<any> {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    const rawBody = await response.text();
+    const isHtml = rawBody.trimStart().startsWith('<') || rawBody.includes('<html');
+    const isRsc = rawBody.includes('self.__next_f.push');
+
+    if (isHtml || isRsc) {
+      throw new Error(
+        `NON_JSON_RESPONSE: ${context} returned HTML instead of JSON (status ${response.status}). ` +
+        `This usually means the API endpoint is not deployed or is pointing to a web page. ` +
+        `Run "codra-code doctor" to check connectivity.`
+      );
+    }
+
+    throw new Error(
+      `NON_JSON_RESPONSE: ${context} returned unexpected content-type "${contentType}" (status ${response.status}). ` +
+      `Expected application/json.`
+    );
+  }
+
+  return response.json();
+}
+
+export class LoginError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly statusCode?: number,
+    public readonly endpoint?: string
+  ) {
+    super(message);
+    this.name = 'LoginError';
+  }
+}
+
 const AUTH_FILE = path.join(os.homedir(), '.codra', 'auth.json');
 const DEFAULT_AUTH_URL = 'https://teraai.chat';
 const AUTH_DEV_BYPASS = process.env.CODRA_AUTH_DEV_BYPASS === '1';
@@ -98,27 +137,56 @@ export async function clearAuthToken(): Promise<void> {
 
 export async function startLogin(options: { noBrowser?: boolean; authUrl?: string } = {}): Promise<boolean> {
   const authBaseUrl = options.authUrl || getAuthBaseUrl();
-  
+  const startEndpoint = `${authBaseUrl}/api/codra/auth/device/start`;
+
   console.log(chalk.cyan('\n  Codra Code Authentication'));
   console.log(chalk.gray('  Starting Tera login flow...\n'));
 
   try {
     // Start device auth session
-    const startResponse = await fetch(`${authBaseUrl}/api/codra/auth/device/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cli_version: '0.1.6',
-        platform: process.platform
-      })
-    });
-
-    if (!startResponse.ok) {
-      const error = await startResponse.text();
-      throw new Error(`Failed to start auth session: ${error}`);
+    let startResponse: Response;
+    try {
+      startResponse = await fetch(startEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cli_version: '0.1.6',
+          platform: process.platform
+        })
+      });
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      throw new LoginError(
+        `Network error connecting to Tera: ${msg}`,
+        'NETWORK_ERROR',
+        undefined,
+        '/api/codra/auth/device/start'
+      );
     }
 
-    const startData = await startResponse.json();
+    if (!startResponse.ok) {
+      try {
+        await readJsonResponse(startResponse, 'Tera auth start endpoint');
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message.startsWith('NON_JSON_RESPONSE')) {
+          throw new LoginError(
+            `Tera returned a web page instead of an API response (HTTP ${startResponse.status}). ` +
+            `The login endpoint may not be deployed yet. Run "codra-code doctor" to check.`,
+            'NON_JSON_RESPONSE',
+            startResponse.status,
+            '/api/codra/auth/device/start'
+          );
+        }
+        throw new LoginError(
+          `Auth session start failed (HTTP ${startResponse.status})`,
+          'HTTP_ERROR',
+          startResponse.status,
+          '/api/codra/auth/device/start'
+        );
+      }
+    }
+
+    const startData = await readJsonResponse(startResponse, 'Tera auth start endpoint');
     const { device_code, user_code, verification_url, expires_at, interval } = startData;
 
     console.log(chalk.gray('  Device Code:'), chalk.white(user_code));
@@ -191,6 +259,7 @@ async function openBrowser(url: string): Promise<void> {
 async function pollForAuth(deviceCode: string, authBaseUrl: string, interval: number): Promise<AuthToken | null> {
   const maxAttempts = 150; // 5 minutes with 2-second intervals
   const pollInterval = interval * 1000;
+  let nonJsonWarningShown = false;
 
   for (let i = 0; i < maxAttempts; i++) {
     try {
@@ -201,8 +270,18 @@ async function pollForAuth(deviceCode: string, authBaseUrl: string, interval: nu
       });
 
       if (response.ok) {
-        const data = await response.json();
-        
+        let data: any;
+        try {
+          data = await readJsonResponse(response, 'Tera auth poll endpoint');
+        } catch {
+          if (!nonJsonWarningShown) {
+            console.log(chalk.yellow('  Warning: Tera poll endpoint returned non-JSON response.'));
+            nonJsonWarningShown = true;
+          }
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          continue;
+        }
+
         if (data.status === 'approved' && data.token) {
           return {
             userId: data.user_id || data.userId,
