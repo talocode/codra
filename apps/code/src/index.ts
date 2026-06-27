@@ -3,6 +3,7 @@ import { startRepl } from './repl.js';
 import { loadConfig, getConfig } from './config.js';
 import { createProvider } from './providers/index.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus, getAuthFilePath } from './auth/index.js';
+import { isLocalProvider } from './providers/index.js';
 import chalk from 'chalk';
 
 const program = new Command();
@@ -10,11 +11,11 @@ const program = new Command();
 program
   .name('codra-code')
   .description('Codra Code: A local-first, open-source coding agent for real software work')
-  .version('0.2.3');
+  .version('0.4.0');
 
 program
   .option('--mock', 'Run in test mode (mock provider, no API calls)')
-  .option('--provider <provider>', 'Override provider (mock, openai, ollama)')
+  .option('--provider <provider>', 'Override provider (mock, openai, ollama, gemini...)')
   .option('--model <model>', 'Override model name')
   .option('--yes', 'Skip confirmation prompts for non-interactive mode')
   .option('--tui', 'Show interactive TUI home screen')
@@ -23,7 +24,7 @@ program
 // Auth commands (no auth required)
 program
   .command('login')
-  .description('Authenticate with Tera account')
+  .description('Authenticate with Tera/Talocode account')
   .option('--no-browser', 'Do not open browser, print URL instead')
   .option('--auth-url <url>', 'Custom Tera auth URL for local development')
   .action(async (options) => {
@@ -62,7 +63,7 @@ program
     console.log(chalk.gray(`\n  Auth token path: ${getAuthFilePath()}\n`));
   });
 
-// Start command
+// Start command - relaxed for local
 program
   .command('start')
   .description('Start the Codra Code interface')
@@ -70,12 +71,14 @@ program
     await loadConfig();
     applyOptions(options);
 
-    // Check auth
-    if (!isAuthenticated()) {
-      console.log(chalk.red('\n  Codra Code requires a Tera account.'));
-      console.log(chalk.gray('  Run: codra-code login'));
-      console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
-      return;
+    const config = getConfig();
+    const usingHosted = !isLocalProvider(config.provider);
+
+    if (usingHosted && !isAuthenticated()) {
+      console.log(chalk.red('\n  Sign in with your Tera/Talocode account to use hosted Codra Code.'));
+      console.log(chalk.gray('  Run: codra login'));
+      console.log(chalk.gray('  Local providers (ollama, mock) are available without auth.\n'));
+      // allow continue with warning, or return; we'll let repl handle per use
     }
 
     const { canShowTui } = await import('./ui/home.js');
@@ -101,12 +104,13 @@ program.action(async (options) => {
     }
     await executeNonInteractive(input.trim());
   } else {
-    // Check auth for interactive mode
-    if (!isAuthenticated()) {
-      console.log(chalk.red('\n  Codra Code requires a Tera account.'));
-      console.log(chalk.gray('  Run: codra-code login'));
-      console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
-      return;
+    const config = getConfig();
+    const usingHosted = !isLocalProvider(config.provider);
+    if (usingHosted && !isAuthenticated()) {
+      console.log(chalk.red('\n  Sign in with your Tera/Talocode account to use hosted Codra Code.'));
+      console.log(chalk.gray('  Run: codra login'));
+      console.log(chalk.gray('  Local providers (ollama, mock) are available without auth.\n'));
+      // proceed to repl anyway for local feel, gating inside
     }
 
     const { canShowTui } = await import('./ui/home.js');
@@ -138,17 +142,17 @@ function applyOptions(options: { mock?: boolean; provider?: string; model?: stri
 async function executeNonInteractive(input: string): Promise<void> {
   const config = getConfig();
   
-  // Check auth for protected commands
-  if (!input.startsWith('/login') && !input.startsWith('/logout') && 
-      !input.startsWith('/auth') && !input.startsWith('/help') &&
-      !input.startsWith('/skills') && !input.startsWith('/skill') &&
-      !input.startsWith('/setup')) {
-    if (!isAuthenticated()) {
-      console.log(chalk.red('\n  Codra Code requires a Tera account.'));
-      console.log(chalk.gray('  Run: codra-code login'));
-      console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
-      process.exit(1);
-    }
+  // Check auth for protected commands - relaxed for local
+  const usingHosted = !isLocalProvider(config.provider);
+  const isPublic = input.startsWith('/login') || input.startsWith('/logout') || 
+      input.startsWith('/auth') || input.startsWith('/help') ||
+      input.startsWith('/skills') || input.startsWith('/skill') ||
+      input.startsWith('/setup') || input.startsWith('/model') || input.startsWith('/provider') || input.startsWith('/status');
+
+  if (usingHosted && !isPublic && !isAuthenticated()) {
+    console.log(chalk.red('\n  Sign in with your Tera/Talocode account to use hosted Codra Code.'));
+    console.log(chalk.gray('  Run: codra login\n'));
+    process.exit(1);
   }
 
   let provider;
@@ -167,6 +171,10 @@ async function executeNonInteractive(input: string): Promise<void> {
     const { handleCommand } = await import('./commands/index.js');
     await handleCommand(input);
   } else {
+    if (usingHosted && !isAuthenticated()) {
+      console.log(chalk.red('\n  Hosted usage blocked. Sign in first: codra login\n'));
+      process.exit(1);
+    }
     try {
       const response = await provider.chat(
         [{ role: 'user', content: input }],

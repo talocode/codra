@@ -55,6 +55,27 @@ export function updateConfig(updates: Partial<Config>): void {
   config = { ...config, ...updates };
 }
 
+export function saveConfig(updates: Partial<Config>): void {
+  updateConfig(updates);
+  try {
+    const codraDir = path.join(os.homedir(), '.codra');
+    if (!fs.existsSync(codraDir)) {
+      fs.mkdirSync(codraDir, { recursive: true });
+    }
+    // Merge with existing user config to avoid overwriting other fields
+    let existing: Partial<Config> = {};
+    if (fs.existsSync(USER_CONFIG)) {
+      try {
+        existing = JSON.parse(fs.readFileSync(USER_CONFIG, 'utf-8'));
+      } catch {}
+    }
+    const toSave = { ...existing, ...config };
+    fs.writeFileSync(USER_CONFIG, JSON.stringify(toSave, null, 2));
+  } catch (e) {
+    console.error('Failed to save config:', e);
+  }
+}
+
 export function isSecretsFile(filePath: string): boolean {
   const secretPatterns = [
     /\.env$/,

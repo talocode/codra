@@ -212,3 +212,49 @@ If Codra Code helps you, you can support the work here:
 - [ ] Plugin marketplace
 - [ ] MCP transport layer
 - [ ] Plugin execution with sandboxing
+
+## v0.4: Auth + Slash Command Interface
+
+### Authentication Gate
+- Hosted usage now requires Tera/Talocode account via `codra login`
+- Local providers (mock, ollama) remain available without login
+- Clear messaging: "Sign in with your Tera/Talocode account to use hosted Codra Code."
+- `codra auth status` shows account, hosted availability
+
+### Slash Command Menu
+- Type `/` in interactive `codra code` REPL to open interactive picker
+- Supports: /help /model /provider /auth /login /logout /status /project /files /plan /build /review /test /commit /clear /exit
+- Placeholder commands show helpful "not wired yet" messages
+
+### Model/Provider Picker
+- `/model` launches full interactive picker:
+  - Lists providers with local/hosted/auth notes
+  - Then lists models for selected provider
+  - Persists via saveConfig to ~/.codra/config.json
+- Current model/provider shown in header
+
+### Terminal Header (start of `codra code`)
+```
+Codra Code
+Workspace: /path
+Mode: local/hosted
+Auth: signed in as user@teraai.chat / not signed in
+Provider: ...
+Model: ...
+Context: X files
+Commands: type / for commands
+```
+
+### /status Enhancements
+- Git branch
+- Auth status + email
+- Config paths (project + user)
+- Slash commands count
+- Mode, provider, model, provider availability
+
+### Safe Practices
+- Never prints access/refresh tokens
+- Uses safe metadata only
+- Dev bypass via env vars only
+
+See docs/AUTH.md for full auth details.

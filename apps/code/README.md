@@ -1,106 +1,93 @@
-# Codra Code v0.2.3
+# Codra Code v0.4.0
 
-## What's New
+## What's New in v0.4
 
-### Interactive TUI Home Screen
-- Premium dark terminal interface with branded ASCII header
-- Shows current provider, model, permission level, and active skills
-- Composer placeholder with command hints
-- Keyboard shortcut hints and onboarding tips
-- Auto-detects terminal capabilities; falls back to classic REPL
-- Use `--tui` or `--no-tui` flags to control behavior
+### Auth + Hosted Gating
+- Tera/Talocode account required for hosted providers (openai, gemini, anthropic, xai)
+- Local providers (mock, ollama) work without auth
+- `codra login` (or `codra-code login`)
+- `codra auth status`
+- `codra logout`
+- Safe storage only, never prints tokens
+- Supports TERA_AUTH_BASE_URL / CODRA_AUTH_BASE_URL
+- Clear "Sign in with your Tera/Talocode account to use hosted Codra Code."
 
-### Skills Discovery & Recommendation
-- Discover skills from `.codra/skills/`, `~/.codra/skills/`, and configured paths
-- Recommend skills based on task type (debugging, UI, video, planning, etc.)
-- Activate multiple skills with context protection (max 3, max 12000 chars)
-- Skills context injected into provider prompts automatically
+### Interactive Slash Command Interface
+- In `codra code` REPL, type `/` to open command picker menu
+- Number or type /cmd to select
+- Groups: Auth & System, Coding
+- Includes /help /model /provider /auth /login /status /project /plan /build /review /test /commit /clear /exit etc.
 
-### Tera Authentication
-- `codra-code login` - Authenticate with Tera account
-- `codra-code logout` - Sign out and remove credentials
-- `codra-code auth` - Show authentication status
-- Protected commands require Tera authentication
-- Token stored at `~/.codra/auth.json` with 600 permissions
+### Model & Provider Picker
+- `/model` opens interactive picker
+- Select provider then model from registry
+- Persists to ~/.codra/config.json via saveConfig
+- Shows current, local vs hosted, auth notes
 
-### Local Auth Server
-- Built-in auth server for testing (`src/auth/auth-server.ts`)
-- Device auth flow with Supabase backend
-- Support for local development and testing
+### Improved REPL Header
+- Codra Code
+- Workspace, Mode: local/hosted, Auth: signed in as xxx / not signed in
+- Provider, Model, Context files
+- Commands: type / for menu
 
-### Auth Flow
-1. User runs `codra-code login`
-2. CLI creates device session via API
-3. CLI opens browser to Tera sign-in page
-4. User signs in with Tera account
-5. Tera shows success page and approves device
-6. CLI polls for auth result
-7. CLI stores token at `~/.codra/auth.json`
+### /status and /auth enhanced
+- Git branch, auth details, config paths, slash cmd count, hosted avail
+- Clear guidance
 
-### Commands
-- `codra-code login` - Start Tera authentication
-- `codra-code login --no-browser` - Headless login
-- `codra-code logout` - Sign out
-- `codra-code auth` - Show auth status
-- `/login`, `/logout`, `/auth` - Slash commands
-- `/skills` - List discovered skills
-- `/skill <name>` - Activate a skill
-- `/skills recommend <task>` - Recommend skills for a task
-- `/skills active` - Show active skills
-- `/skills use <n1,n2>` - Activate multiple skills
-- `/skills clear` - Clear all active skills
-- `/skills paths` - Show skill search paths
+### Placeholder Commands
+- /build /review /test /commit show "not wired yet" helpful msg
 
-### Configuration
-- `CODRA_AUTH_BASE_URL` - Custom Tera auth URL
-- `CODRA_AUTH_DEV_BYPASS` - Development bypass (not for production)
+### Tests
+- Added commands.test.ts for parser, auth, gating, persist, providers
+
+### Docs
+- Updated README, added docs/AUTH.md , docs/CODRA_CODE.md
+
+See full list in /help
+
+## Tera Authentication Foundation
+Codra Code uses Tera/Talocode account as the identity layer for hosted usage.
+This prepares for future billing/credits tied to account.
+Local-first always available.
+
+Commands:
+- codra login
+- codra logout
+- codra auth status
+
+Token file: ~/.codra/auth.json (600 perms, never log contents)
+
+## Slash Commands
+Type / in interactive mode for picker.
+Full list via /help
+
+## Model Picker
+/model shows providers and models, persists selection.
+
+## Hosted vs Local
+Mode: local  - mock/ollama, no auth needed
+Mode: hosted - requires auth for Tera hosted models
 
 ## Installation
-
-```bash
-npm install -g @talocode/codra-code@0.1.6
-```
+npm install -g @talocode/codra-code
 
 ## Usage
-
-```bash
-# Login
-codra-code login
-
-# Headless login
-codra-code login --no-browser
-
-# Check auth status
-codra-code auth
-
-# Logout
-codra-code logout
-
-# Run protected commands
-codra-code --mock "/status"
-```
+codra login
+codra code
+# then type /
+# /model
+# /status
 
 ## Development
+cd apps/code
+pnpm install
+pnpm build
+pnpm test
 
-```bash
-# Build
-npm run build
+## Limitations (v0.4)
+- Some / commands are placeholders (build/review/test/commit)
+- Full Tera backend device flow may use dev bypass for testing
+- No payment/billing yet
+- Rust CLI wrapper for "codra code" subcommand separate
 
-# Test
-codra-code --version
-codra-code --help
-codra-code auth
-codra-code --mock "/status"
-```
-
-## Support Talocode
-
-Talocode builds open-source workflow layers for builders: coding agents, learning tools, trading intelligence, video workflows, and local-first automation.
-
-If Codra Code helps you, you can support the work here:
-
-[![Sponsor Abdulmuiz44](https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Abdulmuiz44)
-
-## License
-
-MIT
+Support Talocode - open source tools for builders.

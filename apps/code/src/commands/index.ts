@@ -33,7 +33,7 @@ import { setupCommand } from './setup.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus } from '../auth/index.js';
 
 // Commands that don't require authentication
-const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path', '/skills', '/skill', '/setup'];
+const PUBLIC_COMMANDS = ['/help', '/login', '/logout', '/auth', '/auth status', '/auth:token-path', '/skills', '/skill', '/setup', '/model', '/provider', '/status', '/clear', '/exit'];
 
 export async function handleCommand(input: string) {
   const parts = input.trim().split(' ');
@@ -43,7 +43,7 @@ export async function handleCommand(input: string) {
   // Check authentication for protected commands
   if (!PUBLIC_COMMANDS.includes(command) && !isAuthenticated()) {
     console.log(chalk.red('\n  Codra Code requires a Tera account.'));
-    console.log(chalk.gray('  Run: /login'));
+    console.log(chalk.gray('  Run: codra login or /login'));
     console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
     return;
   }
@@ -182,6 +182,21 @@ export async function handleCommand(input: string) {
       break;
     case '/setup':
       await setupCommand(args);
+      break;
+    case '/project':
+      console.log(chalk.gray('\n  /project is not fully wired yet in this build. Use normal chat or /status for workspace info.\n'));
+      break;
+    case '/build':
+      console.log(chalk.gray('\n  /build is not wired yet in this build. Use a normal instruction or /plan first.\n'));
+      break;
+    case '/review':
+      console.log(chalk.gray('\n  /review is not wired yet in this build. Describe what to review in chat.\n'));
+      break;
+    case '/test':
+      console.log(chalk.gray('\n  /test is not wired yet in this build. Use /run or normal prompt for test commands.\n'));
+      break;
+    case '/commit':
+      console.log(chalk.gray('\n  /commit is not wired yet in this build. Use /git or run git commands via /run.\n'));
       break;
     default:
       console.log(`Unknown command: ${command}. Type /help for available commands.`);
