@@ -13,11 +13,15 @@
 </p>
 
 <p align="center">
-  <iframe src="https://github.com/sponsors/Abdulmuiz44/card" title="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;"></iframe>
+  <a href="https://github.com/sponsors/Abdulmuiz44">
+    <img src="https://github.com/sponsors/Abdulmuiz44/card" alt="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;">
+  </a>
 </p>
 
 <p align="center">
-  <iframe src="https://github.com/sponsors/Abdulmuiz44/button" title="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+  <a href="https://github.com/sponsors/Abdulmuiz44">
+    <img src="https://github.com/sponsors/Abdulmuiz44/button" alt="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;">
+  </a>
 </p>
 
 ---
@@ -380,14 +384,22 @@ Talocode builds open-source workflow layers for builders: coding agents, learnin
 If Codra helps you, you can support the work here:
 
 <p align="center">
-  <iframe src="https://github.com/sponsors/Abdulmuiz44/card" title="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;"></iframe>
+  <a href="https://github.com/sponsors/Abdulmuiz44">
+    <img src="https://github.com/sponsors/Abdulmuiz44/card" alt="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;">
+  </a>
 </p>
 
 <p align="center">
-  <iframe src="https://github.com/sponsors/Abdulmuiz44/button" title="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+  <a href="https://github.com/sponsors/Abdulmuiz44">
+    <img src="https://github.com/sponsors/Abdulmuiz44/button" alt="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;">
+  </a>
 </p>
 
-[![Sponsor Abdulmuiz44](https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Abdulmuiz44)
+<p align="center">
+  <a href="https://github.com/sponsors/Abdulmuiz44">
+    <img src="https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Abdulmuiz44">
+  </a>
+</p>
 
 ## License
 
