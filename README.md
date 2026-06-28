@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/logo.png" width="180" alt="Codra Logo">
-</p>
-
 <h1 align="center">Codra by Talocode</h1>
 
 <p align="center">
