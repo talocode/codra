@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4
+
+### Added
+- **Composer UI** - New interactive composer interface replaces the basic header, with status line, footer, and improved visual feedback.
+- **Auth HTML detection** - Smart detection of HTML responses from Tera auth endpoints with user-friendly error messages.
+- **Package validation** - Enhanced release validation and dist consistency checks.
+
+### Changed
+- CLI now starts with composer UI by default (non-TUI mode) instead of a static header.
+- Improved error messages for auth failures with HTML endpoint responses.
+- Updated monorepo root dependency to `@talocode/codra-code@^0.2.4`.
+
 ## 0.1.5
 
 ### Added

@@ -6,8 +6,8 @@ import { createProvider } from './providers/index.js';
 import { createSession, saveSessionEntry } from './session/index.js';
 import { setCurrentSession, getCurrentSession } from './session/state.js';
 import { getActiveSkillContext } from './skills/active.js';
-import { isAuthenticated, getAuthToken } from './auth/index.js';
-import { isLocalProvider, getModeLabel } from './providers/index.js';
+import { isAuthenticated } from './auth/index.js';
+import { isLocalProvider } from './providers/index.js';
 let messageHistory = [];
 let currentProvider;
 let fileContext = [];
@@ -60,11 +60,13 @@ export async function startRepl(mockMode = false, useTui = false) {
     }
     const session = createSession();
     setCurrentSession(session);
-    // Improved header per v0.4
-    printCodraHeader(config);
     if (useTui) {
         const { renderHomeScreen } = await import('./ui/home.js');
         renderHomeScreen();
+    }
+    else {
+        const { renderComposer } = await import('./ui/composer.js');
+        renderComposer();
     }
     const rl = readline.createInterface({
         input: process.stdin,
@@ -91,21 +93,6 @@ export async function startRepl(mockMode = false, useTui = false) {
         console.log(chalk.cyan('\n  Session saved. Exiting Codra Code. Goodbye!\n'));
         process.exit(0);
     });
-}
-function printCodraHeader(config) {
-    const cwd = process.cwd();
-    const auth = getAuthToken();
-    const authLabel = auth ? `signed in as ${auth.email}` : 'not signed in';
-    const mode = getModeLabel(config.provider);
-    const hostedNote = mode === 'hosted' ? ' (requires auth for full use)' : '';
-    console.log(chalk.cyan('\n  Codra Code'));
-    console.log(chalk.gray(`  Workspace: ${cwd}`));
-    console.log(chalk.gray(`  Mode: ${mode}${hostedNote}`));
-    console.log(chalk.gray(`  Auth: ${authLabel}`));
-    console.log(chalk.gray(`  Provider: ${config.provider}`));
-    console.log(chalk.gray(`  Model: ${config.model || 'not set'}`));
-    console.log(chalk.gray(`  Context: ${fileContext.length} files loaded`));
-    console.log(chalk.gray('  Commands: type / for interactive menu, /help for list\n'));
 }
 async function showCommandPicker() {
     console.log(chalk.cyan('\n  Codra Code — Command Menu (type number or /cmd)'));

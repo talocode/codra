@@ -13,6 +13,8 @@ export declare function isAuthenticated(): boolean;
 export declare function getAuthToken(): AuthToken | null;
 export declare function saveAuthToken(token: AuthToken): Promise<void>;
 export declare function clearAuthToken(): Promise<void>;
+export declare function isHtmlContent(text: string): boolean;
+export declare function sanitizeErrorMessage(error: unknown): string;
 export declare function startLogin(options?: {
     noBrowser?: boolean;
     authUrl?: string;

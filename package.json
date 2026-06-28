@@ -31,5 +31,8 @@
     "dev": "pnpm -r --parallel run dev",
     "build": "pnpm -r run build",
     "check:task-loop-protocol-sync": "node scripts/check-task-loop-protocol-sync.mjs"
+  },
+  "dependencies": {
+    "@talocode/codra-code": "^0.2.4"
   }
 }

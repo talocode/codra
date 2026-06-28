@@ -74,6 +74,19 @@ export async function clearAuthToken() {
     }
     authToken = null;
 }
+export function isHtmlContent(text) {
+    const trimmed = text.trim();
+    return /<!DOCTYPE html/i.test(trimmed) || /<html[\s>]/i.test(trimmed) || /<HTML[\s>]/i.test(trimmed);
+}
+export function sanitizeErrorMessage(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isHtmlContent(message)) {
+        const urlMatch = message.match(/https?:\/\/[^\s<]+/);
+        const url = urlMatch ? urlMatch[0] : '<url>';
+        return `Login failed: Tera auth endpoint was not found.\n  Codra Code expected a JSON auth response from:\n  ${url}\n  This means the Tera/Codra device auth backend is not deployed yet.\n  Local mode still works:\n    codra-code --mock /status`;
+    }
+    return message;
+}
 export async function startLogin(options = {}) {
     const authBaseUrl = options.authUrl || getAuthBaseUrl();
     console.log(chalk.cyan('\n  Codra Code Authentication'));
@@ -88,8 +101,11 @@ export async function startLogin(options = {}) {
             })
         });
         if (!startResponse.ok) {
-            const error = await startResponse.text();
-            throw new Error(`Failed to start auth session: ${error}`);
+            const body = await startResponse.text();
+            if (isHtmlContent(body)) {
+                throw new Error(`Failed to start auth session (received HTML from ${authBaseUrl}/api/codra/auth/device/start)`);
+            }
+            throw new Error(`Failed to start auth session: ${body}`);
         }
         const startData = await startResponse.json();
         const { device_code, user_code, verification_url, expires_at, interval } = startData;
@@ -120,7 +136,7 @@ export async function startLogin(options = {}) {
         return false;
     }
     catch (error) {
-        console.log(chalk.red(`\n  ✗ Login error: ${error}\n`));
+        console.log(chalk.red(`\n  ✗ ${sanitizeErrorMessage(error)}\n`));
         return false;
     }
 }
