@@ -1,4 +1,4 @@
-# Codra Code v0.2.3
+# Codra Code v0.2.4
 
 ## What's New
 
@@ -20,7 +20,7 @@ Build · <provider>/<model> · <mode> · confirm-edits
 / commands    tab autocomplete    @ attach file soon    ctrl+c exit
 
 /workspace/projects/codra:main
-v0.2.3
+v0.2.4
 ```
 
 **Responsive layout:**
@@ -119,7 +119,7 @@ pnpm install
 pnpm build
 pnpm test
 
-## Limitations (v0.2.3)
+## Limitations (v0.2.4)
 - Some / commands are placeholders (build/review/test/commit)
 - Full Tera backend device flow may use dev bypass for testing
 - No payment/billing yet

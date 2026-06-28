@@ -12,6 +12,14 @@
   <strong>Run agents inside your own development environment without giving up control of your codebase.</strong>
 </p>
 
+<p align="center">
+  <iframe src="https://github.com/sponsors/Abdulmuiz44/card" title="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;"></iframe>
+</p>
+
+<p align="center">
+  <iframe src="https://github.com/sponsors/Abdulmuiz44/button" title="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+</p>
+
 ---
 
 **Codra** is an open-source, local-first AI coding agent built for serious software engineering. It helps developers plan, edit, reason, execute, verify, and repair real code changes inside their own projects. It is designed for builders who want AI coding agents they can inspect, run locally, extend, and trust, not just closed cloud tools or chat-based coding assistants.
@@ -69,6 +77,7 @@ codra-code start
 
 ### Features
 
+- **Composer UI** — Interactive terminal composer with centered layout, status bar, and responsive design
 - **Real provider execution** — OpenAI-compatible, Ollama, and mock providers
 - **Safe file editing** — Write, append, and patch files with confirmation
 - **Git integration** — Status, diff, branch, log, commit
@@ -76,23 +85,37 @@ codra-code start
 - **MCP server support** — Connect to MCP servers for extended tools
 - **Skills system** — Activate skills that influence agent behavior
 - **Session persistence** — Conversation history saved locally
+- **Auth & hosted gating** — Tera/Talocode account for hosted providers, local providers work without auth
+- **Slash command picker** — Press `/` for interactive command menu with auth, model, status, and more
+- **Model picker** — `/model` to select provider and model with persistence
+- **Auth HTML sanitization** — Smart error messages when auth endpoints return unexpected content
 - **Non-interactive mode** — Execute commands from scripts
+
+### Demo
+
+<p align="center">
+  <video src="demo/codra-code-v0.2.4-demo.mp4" controls width="720"></video>
+</p>
 
 ### Cross-Platform Downloads
 
 Download portable releases from [GitHub Releases](https://github.com/talocode/codra/releases/latest):
 
-- Linux: `codra-code-v0.1.4-linux-x64.tar.gz`
-- Windows: `codra-code-v0.1.4-windows-x64.zip`
-- macOS: `codra-code-v0.1.4-macos-arm64.tar.gz`
+- Linux: `codra-code-v0.2.4-linux-x64.tar.gz`
+- Windows: `codra-code-v0.2.4-windows-x64.zip`
+- macOS: `codra-code-v0.2.4-macos-arm64.tar.gz`
 
 **Note:** Portable releases require Node.js >= 18.0.0.
 
 ### Slash Commands
 
 - `/help` — Show available commands
-- `/status` — Show project and provider status
+- `/status` — Show project, auth, and provider status
 - `/doctor` — Check system health
+- `/auth` — Authentication status
+- `/login` — Sign in with Tera/Talocode account
+- `/logout` — Sign out
+- `/model` — Interactive model/provider picker
 - `/read <path>` — Read a file
 - `/write <path>` — Write a file (with confirmation)
 - `/git` — Git summary
@@ -245,9 +268,9 @@ The `@talocode/codra` package is a thin Node wrapper that launches the native Co
 
 Download pre-built binaries from [GitHub Releases](https://github.com/talocode/codra/releases/latest):
 
-- **Linux**: `codra-code-v0.1.4-linux-x64.tar.gz`
-- **Windows**: `codra-code-v0.1.4-windows-x64.zip`
-- **macOS**: `codra-code-v0.1.4-macos-arm64.tar.gz`
+- **Linux**: `codra-code-v0.2.4-linux-x64.tar.gz`
+- **Windows**: `codra-code-v0.2.4-windows-x64.zip`
+- **macOS**: `codra-code-v0.2.4-macos-arm64.tar.gz`
 
 Portable releases require Node.js >= 18.0.0.
 
@@ -330,8 +353,8 @@ Codra is built around strong local-first principles:
 
 Codra is under active development. The core Tauri shell, agent orchestration framework, CLI pieces, daemon, and tooling layer are in progress or already present. Many advanced agent capabilities are still being built.
 
-**Codra Code v0.1.4** is available with:
-- Terminal coding agent interface
+**Codra Code v0.2.4** is available with:
+- Composer UI — interactive terminal interface with status bar and responsive layout
 - Provider-agnostic model support (OpenAI, Ollama, Mock)
 - Safe file editing with confirmation
 - Git integration
@@ -339,6 +362,9 @@ Codra is under active development. The core Tauri shell, agent orchestration fra
 - MCP server support
 - Skills system
 - Session persistence
+- Auth & hosted gating (Tera/Talocode account for hosted providers)
+- Slash command picker and model picker
+- Auth HTML sanitization for clean error messages
 - Cross-platform downloadable releases
 
 ## Contributing
@@ -352,6 +378,14 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 Talocode builds open-source workflow layers for builders: coding agents, learning tools, trading intelligence, video workflows, and local-first automation.
 
 If Codra helps you, you can support the work here:
+
+<p align="center">
+  <iframe src="https://github.com/sponsors/Abdulmuiz44/card" title="Sponsor Abdulmuiz44" height="225" width="600" style="border: 0;"></iframe>
+</p>
+
+<p align="center">
+  <iframe src="https://github.com/sponsors/Abdulmuiz44/button" title="Sponsor Abdulmuiz44" height="32" width="114" style="border: 0; border-radius: 6px;"></iframe>
+</p>
 
 [![Sponsor Abdulmuiz44](https://img.shields.io/badge/Sponsor-Abdulmuiz44-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Abdulmuiz44)
 
