@@ -1,9 +1,9 @@
 import { getPlan } from '../plans/store.js';
 import { getConfig } from '../config.js';
-import { getActiveSkills } from '../skills/active.js';
+import { getActiveSkill } from '../skills/active.js';
 export function createVisualPlanFromTask(task) {
     const config = getConfig();
-    const activeSkills = getActiveSkills();
+    const activeSkill = getActiveSkill();
     const sections = [
         {
             id: generateId(),

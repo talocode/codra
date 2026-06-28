@@ -8,4 +8,5 @@ export interface Config {
 export declare function loadConfig(): Promise<Config>;
 export declare function getConfig(): Config;
 export declare function updateConfig(updates: Partial<Config>): void;
+export declare function saveConfig(updates: Partial<Config>): void;
 export declare function isSecretsFile(filePath: string): boolean;

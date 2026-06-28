@@ -20,7 +20,7 @@
     "start": "node node_modules/tsx/dist/cli.mjs src/index.ts",
     "build": "tsc --outDir dist && echo '#!/usr/bin/env node' | cat - dist/index.js > dist/index.tmp && mv dist/index.tmp dist/index.js && chmod +x dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/**/*.test.ts",
+    "test": "node --import tsx --test src/**/*.test.ts",
     "validate": "npm run typecheck && npm run build",
     "mock": "node node_modules/tsx/dist/cli.mjs src/index.ts --mock",
     "prepublishOnly": "npm run validate",

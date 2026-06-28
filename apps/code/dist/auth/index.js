@@ -8,7 +8,9 @@ const AUTH_DEV_BYPASS = process.env.CODRA_AUTH_DEV_BYPASS === '1';
 const ALLOW_DEV_BYPASS = process.env.CODRA_ALLOW_DEV_BYPASS === '1' || process.env.NODE_ENV !== 'production';
 let authToken = null;
 export function getAuthBaseUrl() {
-    return process.env.CODRA_AUTH_BASE_URL || DEFAULT_AUTH_URL;
+    return process.env.CODRA_AUTH_BASE_URL ||
+        process.env.TERA_AUTH_BASE_URL ||
+        DEFAULT_AUTH_URL;
 }
 export function getAuthFilePath() {
     return AUTH_FILE;
@@ -37,9 +39,8 @@ export function getAuthToken() {
         try {
             const content = fs.readFileSync(AUTH_FILE, 'utf-8');
             const token = JSON.parse(content);
-            // Check if token is expired
             if (new Date(token.expiresAt) < new Date()) {
-                console.log(chalk.yellow('  Warning: Auth token has expired. Please run: codra-code login'));
+                console.log(chalk.yellow('  Warning: Auth token has expired. Please run: codra login'));
                 return null;
             }
             authToken = token;
@@ -57,13 +58,12 @@ export async function saveAuthToken(token) {
         fs.mkdirSync(codraDir, { recursive: true });
     }
     fs.writeFileSync(AUTH_FILE, JSON.stringify(token, null, 2));
-    // Set permissions to 600 on Linux/macOS
     if (process.platform !== 'win32') {
         try {
             fs.chmodSync(AUTH_FILE, 0o600);
         }
         catch {
-            // Ignore permission errors on some systems
+            // Ignore
         }
     }
     authToken = token;
@@ -79,12 +79,11 @@ export async function startLogin(options = {}) {
     console.log(chalk.cyan('\n  Codra Code Authentication'));
     console.log(chalk.gray('  Starting Tera login flow...\n'));
     try {
-        // Start device auth session
         const startResponse = await fetch(`${authBaseUrl}/api/codra/auth/device/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                cli_version: '0.1.6',
+                cli_version: '0.4.0',
                 platform: process.platform
             })
         });
@@ -105,18 +104,16 @@ export async function startLogin(options = {}) {
             console.log(chalk.gray('  Opening browser for authentication...'));
             console.log(chalk.gray('  If browser doesn\'t open, visit:\n'));
             console.log(chalk.cyan(`  ${verification_url}\n`));
-            // Try to open browser
             await openBrowser(verification_url);
         }
         console.log(chalk.gray('  Waiting for authentication...'));
         console.log(chalk.gray('  (Press Ctrl+C to cancel)\n'));
-        // Poll for authentication
         const token = await pollForAuth(device_code, authBaseUrl, interval || 2);
         if (token) {
             await saveAuthToken(token);
             console.log(chalk.green('\n  ✓ Authenticated with Tera successfully!'));
             console.log(chalk.gray(`  Account: ${token.email}`));
-            console.log(chalk.gray('  You can now use Codra Code.\n'));
+            console.log(chalk.gray('  You can now use Codra Code for hosted features.\n'));
             return true;
         }
         console.log(chalk.red('\n  ✗ Authentication failed or timed out.\n'));
@@ -126,14 +123,6 @@ export async function startLogin(options = {}) {
         console.log(chalk.red(`\n  ✗ Login error: ${error}\n`));
         return false;
     }
-}
-function generateDeviceCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 32; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
 }
 async function openBrowser(url) {
     const { exec } = await import('child_process');
@@ -148,12 +137,10 @@ async function openBrowser(url) {
     else {
         command = `xdg-open "${url}" || echo "Could not open browser"`;
     }
-    return new Promise((resolve) => {
-        exec(command, () => resolve());
-    });
+    return new Promise((resolve) => { exec(command, () => resolve()); });
 }
 async function pollForAuth(deviceCode, authBaseUrl, interval) {
-    const maxAttempts = 150; // 5 minutes with 2-second intervals
+    const maxAttempts = 150;
     const pollInterval = interval * 1000;
     for (let i = 0; i < maxAttempts; i++) {
         try {
@@ -185,7 +172,7 @@ async function pollForAuth(deviceCode, authBaseUrl, interval) {
             }
         }
         catch {
-            // Backend endpoint may not exist yet
+            // safe placeholder, backend may not be live yet
         }
         await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
@@ -195,7 +182,7 @@ export async function authStatus() {
     console.log(chalk.cyan('\n  Auth Status'));
     if (AUTH_DEV_BYPASS && ALLOW_DEV_BYPASS) {
         console.log(chalk.yellow('  Mode: Development bypass active'));
-        console.log(chalk.gray('  Set CODRA_AUTH_DEV_BYPASS=0 to disable\n'));
+        console.log(chalk.gray('  Set CODRA_AUTH_DEV_BYPASS=*** to disable\n'));
         return;
     }
     const token = getAuthToken();
@@ -206,22 +193,25 @@ export async function authStatus() {
         console.log(chalk.gray(`  Account: ${token.email}`));
         console.log(chalk.gray(`  Expires: ${expiresDate.toLocaleDateString()}`));
         if (isExpired) {
-            console.log(chalk.yellow('  Warning: Token has expired. Run: codra-code login'));
+            console.log(chalk.yellow('  Warning: Token has expired. Run: codra login'));
         }
-        console.log(chalk.gray(`  Token: ${AUTH_FILE}`));
+        console.log(chalk.gray(`  Hosted usage: available (Tera/Talocode account)`));
+        console.log(chalk.gray(`  Token file: ${AUTH_FILE} (contents never printed)`));
     }
     else {
         console.log(chalk.red('  Status: Not authenticated'));
-        console.log(chalk.gray('  Run: codra-code login'));
+        console.log(chalk.gray('  Run: codra login'));
         console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin'));
+        console.log(chalk.gray('  Hosted usage: blocked for hosted providers'));
+        console.log(chalk.gray('  Local mode (mock, ollama): works without auth'));
     }
     console.log('');
 }
 export function requireAuth() {
     if (isAuthenticated())
         return true;
-    console.log(chalk.red('\n  Codra Code requires a Tera account.'));
-    console.log(chalk.gray('  Run: codra-code login'));
+    console.log(chalk.red('\n  Codra Code requires a Tera account for hosted features.'));
+    console.log(chalk.gray('  Run: codra login'));
     console.log(chalk.gray('  Sign in at: https://teraai.chat/auth/signin\n'));
     return false;
 }

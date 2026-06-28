@@ -6,13 +6,14 @@ import { isAuthenticated, getAuthToken } from '../auth/index.js';
 import { isLocalProvider, getModeLabel } from '../providers/index.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { execSync } from 'child_process';
 
 export async function statusCommand() {
   const config = getConfig();
   const cwd = process.cwd();
   const configPath = path.join(cwd, '.codra/config.json');
-  const userConfigPath = path.join(require('os').homedir(), '.codra/config.json');
+  const userConfigPath = path.join(os.homedir(), '.codra/config.json');
   
   console.log(chalk.cyan('\n  Codra Code Status'));
   

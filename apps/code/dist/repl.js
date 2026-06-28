@@ -6,6 +6,8 @@ import { createProvider } from './providers/index.js';
 import { createSession, saveSessionEntry } from './session/index.js';
 import { setCurrentSession, getCurrentSession } from './session/state.js';
 import { getActiveSkillContext } from './skills/active.js';
+import { isAuthenticated, getAuthToken } from './auth/index.js';
+import { isLocalProvider, getModeLabel } from './providers/index.js';
 let messageHistory = [];
 let currentProvider;
 let fileContext = [];
@@ -58,16 +60,11 @@ export async function startRepl(mockMode = false, useTui = false) {
     }
     const session = createSession();
     setCurrentSession(session);
+    // Improved header per v0.4
+    printCodraHeader(config);
     if (useTui) {
         const { renderHomeScreen } = await import('./ui/home.js');
         renderHomeScreen();
-    }
-    else {
-        const modeLabel = config.mockMode ? 'Test Mode' : 'Production';
-        console.log(chalk.cyan('\n  Codra Code v0.2.3'));
-        console.log(chalk.gray('  A local-first, open-source coding agent for real software work'));
-        console.log(chalk.gray(`  Provider: ${config.provider} | Model: ${config.model} | Mode: ${modeLabel}`));
-        console.log(chalk.gray('  Type "/help" for available commands.\n'));
     }
     const rl = readline.createInterface({
         input: process.stdin,
@@ -78,7 +75,10 @@ export async function startRepl(mockMode = false, useTui = false) {
     rl.on('line', async (line) => {
         const input = line.trim();
         if (input) {
-            if (input.startsWith('/')) {
+            if (input === '/') {
+                await showCommandPicker();
+            }
+            else if (input.startsWith('/')) {
                 await handleCommand(input);
             }
             else {
@@ -92,8 +92,85 @@ export async function startRepl(mockMode = false, useTui = false) {
         process.exit(0);
     });
 }
+function printCodraHeader(config) {
+    const cwd = process.cwd();
+    const auth = getAuthToken();
+    const authLabel = auth ? `signed in as ${auth.email}` : 'not signed in';
+    const mode = getModeLabel(config.provider);
+    const hostedNote = mode === 'hosted' ? ' (requires auth for full use)' : '';
+    console.log(chalk.cyan('\n  Codra Code'));
+    console.log(chalk.gray(`  Workspace: ${cwd}`));
+    console.log(chalk.gray(`  Mode: ${mode}${hostedNote}`));
+    console.log(chalk.gray(`  Auth: ${authLabel}`));
+    console.log(chalk.gray(`  Provider: ${config.provider}`));
+    console.log(chalk.gray(`  Model: ${config.model || 'not set'}`));
+    console.log(chalk.gray(`  Context: ${fileContext.length} files loaded`));
+    console.log(chalk.gray('  Commands: type / for interactive menu, /help for list\n'));
+}
+async function showCommandPicker() {
+    console.log(chalk.cyan('\n  Codra Code — Command Menu (type number or /cmd)'));
+    console.log(chalk.gray('  Auth & System:'));
+    const cmds = [
+        { cmd: '/help', desc: 'Show full help' },
+        { cmd: '/status', desc: 'Show workspace, auth, model status' },
+        { cmd: '/auth', desc: 'Authentication status' },
+        { cmd: '/login', desc: 'Sign in with Tera account' },
+        { cmd: '/logout', desc: 'Sign out' },
+        { cmd: '/model', desc: 'Model & provider picker' },
+        { cmd: '/provider', desc: 'Switch provider' },
+        { cmd: '/clear', desc: 'Clear session' },
+        { cmd: '/exit', desc: 'Quit' },
+    ];
+    cmds.forEach((c, i) => console.log(chalk.gray(`    ${i + 1}. ${c.cmd}  ${c.desc}`)));
+    console.log(chalk.gray('\n  Coding:'));
+    const codingCmds = [
+        { cmd: '/project', desc: 'Project info' },
+        { cmd: '/files', desc: 'List files' },
+        { cmd: '/plan', desc: 'Create plan' },
+        { cmd: '/build', desc: 'Build action (not wired yet)' },
+        { cmd: '/review', desc: 'Code review (not wired yet)' },
+        { cmd: '/test', desc: 'Run tests (not wired yet)' },
+        { cmd: '/commit', desc: 'Git commit (not wired yet)' },
+    ];
+    codingCmds.forEach((c, i) => console.log(chalk.gray(`    ${cmds.length + i + 1}. ${c.cmd}  ${c.desc}`)));
+    console.log(chalk.gray('\n  0. Cancel / close menu\n'));
+    const choice = await ask('  Select: ');
+    const num = parseInt(choice.trim(), 10);
+    if (isNaN(num) || num === 0) {
+        return;
+    }
+    let selected = '';
+    if (num >= 1 && num <= cmds.length) {
+        selected = cmds[num - 1].cmd;
+    }
+    else if (num > cmds.length && num <= cmds.length + codingCmds.length) {
+        selected = codingCmds[num - cmds.length - 1].cmd;
+    }
+    if (selected) {
+        console.log('');
+        await handleCommand(selected);
+    }
+    else {
+        console.log(chalk.yellow('  Unknown selection.'));
+    }
+}
+function ask(question) {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+        rl.question(question, (answer) => {
+            rl.close();
+            resolve(answer);
+        });
+    });
+}
 async function handleUserMessage(input) {
     const config = getConfig();
+    // Gate hosted usage
+    if (!isLocalProvider(config.provider) && !isAuthenticated()) {
+        console.log(chalk.red('\n  Hosted coding requires Tera account.'));
+        console.log(chalk.gray('  Run: /login   or use local provider (ollama/mock)\n'));
+        return;
+    }
     saveSessionEntry(getCurrentSession(), {
         timestamp: new Date().toISOString(),
         role: 'user',
