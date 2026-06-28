@@ -1,10 +1,10 @@
 {
-  "name": "codra-launch-video",
+  "name": "codra-code-v024-video",
   "version": "1.0.0",
-  "description": "Codra Code v0.1.6 Launch Video",
+  "description": "Codra Code v0.2.4 Demo Video",
   "scripts": {
     "start": "npx remotion studio",
-    "build": "npx remotion render src/index.ts CodraLaunchVideo out/codra-code-v0.1.6-launch.mp4",
+    "build": "npx remotion render src/index.ts CodraCodeV024 out/codra-code-v0.2.4-demo.mp4",
     "upgrade": "npx remotion upgrade"
   },
   "dependencies": {
