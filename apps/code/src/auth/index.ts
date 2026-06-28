@@ -96,6 +96,21 @@ export async function clearAuthToken(): Promise<void> {
   authToken = null;
 }
 
+export function isHtmlContent(text: string): boolean {
+  const trimmed = text.trim();
+  return /<!DOCTYPE html/i.test(trimmed) || /<html[\s>]/i.test(trimmed) || /<HTML[\s>]/i.test(trimmed);
+}
+
+export function sanitizeErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (isHtmlContent(message)) {
+    const urlMatch = message.match(/https?:\/\/[^\s<]+/);
+    const url = urlMatch ? urlMatch[0] : '<url>';
+    return `Login failed: Tera auth endpoint was not found.\n  Codra Code expected a JSON auth response from:\n  ${url}\n  This means the Tera/Codra device auth backend is not deployed yet.\n  Local mode still works:\n    codra-code --mock /status`;
+  }
+  return message;
+}
+
 export async function startLogin(options: { noBrowser?: boolean; authUrl?: string } = {}): Promise<boolean> {
   const authBaseUrl = options.authUrl || getAuthBaseUrl();
   
@@ -113,8 +128,11 @@ export async function startLogin(options: { noBrowser?: boolean; authUrl?: strin
     });
 
     if (!startResponse.ok) {
-      const error = await startResponse.text();
-      throw new Error(`Failed to start auth session: ${error}`);
+      const body = await startResponse.text();
+      if (isHtmlContent(body)) {
+        throw new Error(`Failed to start auth session (received HTML from ${authBaseUrl}/api/codra/auth/device/start)`);
+      }
+      throw new Error(`Failed to start auth session: ${body}`);
     }
 
     const startData = await startResponse.json();
@@ -151,7 +169,7 @@ export async function startLogin(options: { noBrowser?: boolean; authUrl?: strin
     return false;
 
   } catch (error) {
-    console.log(chalk.red(`\n  ✗ Login error: ${error}\n`));
+    console.log(chalk.red(`\n  ✗ ${sanitizeErrorMessage(error)}\n`));
     return false;
   }
 }

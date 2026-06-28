@@ -1,6 +1,39 @@
-# Codra Code v0.4.0
+# Codra Code v0.2.3
 
-## What's New in v0.4
+## What's New
+
+### Codra Code Terminal Composer
+
+When launched interactively, `codra-code` now shows a clean centered terminal composer:
+
+```
+                          codra-code
+
+        Local-first coding agent by Talocode
+
+┌──────────────────────────────────────────────────────────────┐
+│ Ask Codra to build, fix, review, test, or understand code... │
+└──────────────────────────────────────────────────────────────┘
+
+Build · <provider>/<model> · <mode> · confirm-edits
+
+/ commands    tab autocomplete    @ attach file soon    ctrl+c exit
+
+/workspace/projects/codra:main
+v0.2.3
+```
+
+**Responsive layout:**
+- Wide terminal: shows centered title, subtitle, boxed prompt, status, shortcuts, footer
+- Narrow terminal (< 60 cols): minimal text-only layout that does not overflow
+
+**Elements:**
+- **Title**: `codra-code` in brand color (centered, bold on wide screens)
+- **Subtitle**: `Local-first coding agent by Talocode`
+- **Prompt box**: Box with placeholder text "Ask Codra to build, fix, review, test, or understand this repo..."
+- **Status row**: `Build · provider/model · mode · edit-policy`
+- **Shortcuts**: `/ commands`, `tab autocomplete`, `@ attach file soon`, `ctrl+c exit`
+- **Footer**: workspace path with git branch, version number
 
 ### Auth + Hosted Gating
 - Tera/Talocode account required for hosted providers (openai, gemini, anthropic, xai)
@@ -13,7 +46,7 @@
 - Clear "Sign in with your Tera/Talocode account to use hosted Codra Code."
 
 ### Interactive Slash Command Interface
-- In `codra code` REPL, type `/` to open command picker menu
+- In REPL, type `/` to open command picker menu
 - Number or type /cmd to select
 - Groups: Auth & System, Coding
 - Includes /help /model /provider /auth /login /status /project /plan /build /review /test /commit /clear /exit etc.
@@ -24,11 +57,10 @@
 - Persists to ~/.codra/config.json via saveConfig
 - Shows current, local vs hosted, auth notes
 
-### Improved REPL Header
-- Codra Code
-- Workspace, Mode: local/hosted, Auth: signed in as xxx / not signed in
-- Provider, Model, Context files
-- Commands: type / for menu
+### Login Error Sanitization
+- If Tera auth endpoint returns HTML (e.g. 404 page), Codra Code now sanitizes the output
+- Shows clean message: "Login failed: Tera auth endpoint was not found."
+- Never prints raw HTML, tokens, or secrets
 
 ### /status and /auth enhanced
 - Git branch, auth details, config paths, slash cmd count, hosted avail
@@ -39,9 +71,12 @@
 
 ### Tests
 - Added commands.test.ts for parser, auth, gating, persist, providers
+- Composer UI state, status line, footer line
+- Auth HTML sanitization
+- Slash command routing
 
 ### Docs
-- Updated README, added docs/AUTH.md , docs/CODRA_CODE.md
+- Updated README, added docs/AUTH.md, docs/CODRA_CODE.md
 
 See full list in /help
 
@@ -84,10 +119,12 @@ pnpm install
 pnpm build
 pnpm test
 
-## Limitations (v0.4)
+## Limitations (v0.2.3)
 - Some / commands are placeholders (build/review/test/commit)
 - Full Tera backend device flow may use dev bypass for testing
 - No payment/billing yet
 - Rust CLI wrapper for "codra code" subcommand separate
+- `@ attach file` not yet implemented (shows "soon" placeholder)
+- Login flow requires Tera device auth backend; if not deployed, shows clean error message
 
 Support Talocode - open source tools for builders.

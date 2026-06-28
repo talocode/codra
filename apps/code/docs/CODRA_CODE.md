@@ -4,6 +4,86 @@
 
 Codra Code is a local-first, open-source coding agent interface designed for real software work. It provides a clean terminal experience for interacting with AI models while keeping your code and data local.
 
+## Codra Code Terminal Composer
+
+When launched interactively, `codra-code` shows a clean centered terminal composer:
+
+```
+                          codra-code
+
+        Local-first coding agent by Talocode
+
+┌──────────────────────────────────────────────────────────────┐
+│ Ask Codra to build, fix, review, test, or understand code... │
+└──────────────────────────────────────────────────────────────┘
+
+Build · <provider>/<model> · <mode> · confirm-edits
+
+/ commands    tab autocomplete    @ attach file soon    ctrl+c exit
+
+/workspace/projects/codra:main
+v0.2.3
+```
+
+### Elements
+
+| Element | Description | Example |
+|---|---|---|
+| Title | Brand name "codra-code" centered and bold | `codra-code` |
+| Subtitle | "Local-first coding agent by Talocode" | shown on wide terminals |
+| Prompt box | Box with placeholder for user input | `Ask Codra to build, fix...` |
+| Status row | Build · provider/model · mode · edit-policy | `Build · xai/grok-3 · hosted · confirm-edits` |
+| Shortcuts | Available interactive commands | `/ commands tab autocomplete @ attach file soon ctrl+c exit` |
+| Footer | Workspace path:git-branch and version | `/workspace/projects/codra:main v0.2.3` |
+
+### Commands
+
+- `/` — Open command picker menu
+- `/help` — Show available commands
+- `/status` — Show configuration and project status
+- `/model` — Manage model selection
+- `/provider` — Manage provider selection
+- `/auth` — Show authentication status
+- `/login` — Sign in with Tera/Talocode account
+- `/logout` — Sign out
+- `/clear` — Clear session view
+- `/exit` — Quit
+
+### Shortcuts
+
+- `/ commands` — Type `/` to open picker
+- `tab autocomplete` — Tab key for autocomplete
+- `@ attach file soon` — File attachment (coming soon)
+- `ctrl+c exit` — Exit the session
+
+### Local vs Hosted Behavior
+
+**Local mode** (mock, ollama):
+- No login required
+- All slash commands work
+- Chat with local models
+
+**Hosted mode** (openai, gemini, anthropic, xai):
+- Requires `codra login` with Tera account
+- If not authenticated, shows: "Sign in with your Tera/Talocode account to use hosted Codra Code."
+- `/login` starts device auth flow
+
+### Login Limitation
+
+The Tera device auth backend may not be deployed yet.
+If the endpoint returns HTML, Codra Code shows a clean message:
+
+```
+Login failed: Tera auth endpoint was not found.
+Codra Code expected a JSON auth response from:
+https://teraai.chat/api/codra/auth/device/start
+This means the Tera/Codra device auth backend is not deployed yet.
+Local mode still works:
+  codra-code --mock /status
+```
+
+No raw HTML, tokens, or secrets are ever printed.
+
 ## Why Codra Code?
 
 Inspired by [MiMo-Code](https://github.com/XiaomiMiMo/MiMo-Code), Codra Code takes the concept of a terminal-based coding agent and adapts it for the Codra ecosystem with a focus on:
