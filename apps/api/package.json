@@ -1,0 +1,24 @@
+{
+  "name": "@codra/cloud-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codra Cloud API v0.1 — Talocode Cloud hosted API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "node --import tsx watch src/index.ts",
+    "start": "node --import tsx src/index.ts",
+    "build": "tsc --outDir dist",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/__tests__/*.test.ts",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
