@@ -21,7 +21,7 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 }
 
-const server = Bun?.serve ?? undefined
+const server = typeof Bun !== 'undefined' ? Bun?.serve : undefined
 
 if (server) {
   Bun.serve({
