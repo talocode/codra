@@ -49,6 +49,17 @@ Expected results:
 - `apps/desktop` should not appear in `crates/` (Rust crates must not depend on the desktop app).
 - `codra-core` should not appear in `apps/desktop/src` (UI uses shared protocol types, not runtime internals).
 
+## Talocode Domains
+
+| Domain | Purpose |
+|--------|---------|
+| [talocode.site](https://talocode.site) | Main site / homepage |
+| [docs.talocode.site](https://docs.talocode.site) | Documentation |
+| [api.talocode.site](https://api.talocode.site) | API endpoint |
+| [cloud.talocode.site](https://cloud.talocode.site) | Cloud dashboard |
+| [stacklane.talocode.site](https://stacklane.talocode.site) | Stacklane platform |
+| [dashboard.talocode.site](https://dashboard.talocode.site) | Dashboard |
+
 ## Definition of Done
 - Feature is complete.
 - Rust tests compiled and passing locally.
