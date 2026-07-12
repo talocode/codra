@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talocode-codra"
+version = "0.1.0"
+description = "Local-first AI coding agent API client — repo summaries, code explain, code review, and implementation planning"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "Talocode"}]
+keywords = ["codra", "ai", "coding", "code-review", "code-explanation", "planning", "talocode"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/talocode/codra"
+PyPI = "https://pypi.org/project/talocode-codra/"
+npm = "https://www.npmjs.com/package/@talocode/codra"
+
+[project.scripts]
+codra = "codra.__main__:main"

@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+codra/__init__.py
+codra/__main__.py
+codra/client.py
+talocode_codra.egg-info/PKG-INFO
+talocode_codra.egg-info/SOURCES.txt
+talocode_codra.egg-info/dependency_links.txt
+talocode_codra.egg-info/entry_points.txt
+talocode_codra.egg-info/top_level.txt

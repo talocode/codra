@@ -1,0 +1,60 @@
+Metadata-Version: 2.4
+Name: talocode-codra
+Version: 0.1.0
+Summary: Local-first AI coding agent API client — repo summaries, code explain, code review, and implementation planning
+Author: Talocode
+License: MIT
+Project-URL: Homepage, https://github.com/talocode/codra
+Project-URL: PyPI, https://pypi.org/project/talocode-codra/
+Project-URL: npm, https://www.npmjs.com/package/@talocode/codra
+Keywords: codra,ai,coding,code-review,code-explanation,planning,talocode
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+
+# Codra (Python)
+
+Local-first AI coding agent API client — repo summaries, code explain, code review, and implementation planning.
+
+```bash
+pip install talocode-codra
+```
+
+## Usage
+
+```python
+from codra import CodraClient
+
+client = CodraClient(api_key="your_talocode_key")
+
+# Explain code
+result = client.explain("python", "def hello(): print('hi')")
+print(result["result"]["explanation"])
+
+# Review code
+result = client.review("typescript", "const x: any = 1;", focus=["bugs", "types"])
+
+# Plan implementation
+result = client.plan("Add user authentication", context="FastAPI + SQLAlchemy project")
+
+# Repo summary
+files = [{"path": "src/main.py", "content": "print('hello')"}]
+result = client.repo_summary(files)
+```
+
+## CLI
+
+```bash
+codra health
+codra explain --language python --code "print('hello')"
+codra review --language typescript --code "const x = 1;"
+codra plan --task "Add login feature"
+```
+
+Requires `TALOCODE_API_KEY` environment variable.
