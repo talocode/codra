@@ -5,6 +5,7 @@ import { createProvider } from './providers/index.js';
 import { isAuthenticated, startLogin, clearAuthToken, authStatus, getAuthFilePath } from './auth/index.js';
 import { isLocalProvider } from './providers/index.js';
 import chalk from 'chalk';
+import { ping } from './telemetry.js';
 
 const program = new Command();
 
@@ -190,6 +191,8 @@ async function executeNonInteractive(input: string): Promise<void> {
   
   process.exit(0);
 }
+
+ping();
 
 program.parseAsync(process.argv).then(() => {
   if (process.stdin.isTTY) return;
