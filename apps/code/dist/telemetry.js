@@ -35,7 +35,7 @@ export function ping() {
     const instanceId = getInstanceId();
     const payload = {
         instance_id: instanceId,
-        version: '0.2.5',
+        version: '0.2.6',
         node: process.version,
         platform: process.platform,
         arch: process.arch,

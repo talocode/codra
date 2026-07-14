@@ -1,4 +1,4 @@
-# Codra Code v0.2.5
+# Codra Code v0.2.6
 
 ## What's New
 
@@ -119,7 +119,7 @@ pnpm install
 pnpm build
 pnpm test
 
-## Limitations (v0.2.5)
+## Limitations (v0.2.6)
 - Some / commands are placeholders (build/review/test/commit)
 - Full Tera backend device flow may use dev bypass for testing
 - No payment/billing yet
