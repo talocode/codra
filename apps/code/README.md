@@ -1,4 +1,4 @@
-# Codra Code v0.2.4
+# Codra Code v0.2.5
 
 ## What's New
 
@@ -119,12 +119,20 @@ pnpm install
 pnpm build
 pnpm test
 
-## Limitations (v0.2.4)
+## Limitations (v0.2.5)
 - Some / commands are placeholders (build/review/test/commit)
 - Full Tera backend device flow may use dev bypass for testing
 - No payment/billing yet
 - Rust CLI wrapper for "codra code" subcommand separate
 - `@ attach file` not yet implemented (shows "soon" placeholder)
 - Login flow requires Tera device auth backend; if not deployed, shows clean error message
+
+## Telemetry
+`codra-code` sends an anonymous daily ping (once per day per instance) with:
+- Anonymous instance ID (random UUID stored at `~/.codra/instance-id`)
+- Package version, Node.js version, platform, architecture
+- No PII, no code, no file paths, no IP stored
+
+The ping is fire-and-forget — never blocks, never alerts on failure. To disable, unset the `CODRA_TELEMETRY_DISABLED` environment variable (future).
 
 Support Talocode - open source tools for builders.
