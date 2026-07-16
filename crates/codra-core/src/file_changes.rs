@@ -6,7 +6,7 @@ pub fn validate_file_change(workspace_path: &Path, change: &FileChange) -> Resul
     let full_path = workspace_path.join(&change.path);
 
     // Block absolute paths and path traversal
-    if change.path.starts_with('/') || change.path.contains("..") {
+    if change.change_type.starts_with('/') || change.change_type.contains("..") {
         return Err("Path traversal or absolute path outside workspace is not allowed".to_string());
     }
 
@@ -38,6 +38,7 @@ pub fn apply_file_change(
     workspace_path: &Path,
     change: &mut FileChange,
     backup_dir: &Path,
+    content: Option<&str>,
 ) -> Result<(), String> {
     validate_file_change(workspace_path, change)?;
 
@@ -49,15 +50,50 @@ pub fn apply_file_change(
 
     match change.change_type.as_str() {
         "create" | "modify" => {
-            fs::write(&full_path, "").map_err(|e| e.to_string())?; // placeholder - real patch later
+            let file_content = content.unwrap_or("");
+            fs::write(&full_path, file_content).map_err(|e| e.to_string())?;
             change.applied = true;
         }
         "delete" => {
-            // Block delete by default for safety in MVP
-            return Err("Delete operations are blocked by default in MVP".to_string());
+            if full_path.exists() {
+                fs::remove_file(&full_path).map_err(|e| e.to_string())?;
+                change.applied = true;
+            }
         }
         _ => return Err("Unsupported change type".to_string()),
     }
 
     Ok(())
+}
+
+pub fn apply_search_replace(
+    workspace_path: &Path,
+    path: &str,
+    search: &str,
+    replace: &str,
+    backup_dir: &Path,
+) -> Result<String, String> {
+    let full_path = workspace_path.join(path);
+    if !full_path.starts_with(workspace_path) {
+        return Err("Path traversal not allowed".to_string());
+    }
+
+    if !full_path.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+
+    let content = fs::read_to_string(&full_path).map_err(|e| e.to_string())?;
+
+    let _ = create_backup(workspace_path, path, backup_dir);
+
+    let new_content = content.replace(search, replace);
+
+    if content == new_content {
+        return Ok(format!("No matches found for '{}' in {}", search, path));
+    }
+
+    let matches = content.matches(search).count();
+    fs::write(&full_path, &new_content).map_err(|e| e.to_string())?;
+
+    Ok(format!("Replaced {} occurrence(s) in {}", matches, path))
 }

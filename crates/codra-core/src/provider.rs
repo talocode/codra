@@ -12,6 +12,21 @@ pub trait IntelligenceProvider: Send + Sync {
     fn generate(&self, request: &GenerationRequest) -> Result<GenerationResponse, String>;
     fn health_check(&self) -> Result<ProviderHealthResult, String>;
     fn list_models(&self) -> Result<Vec<ModelDescriptor>, String>;
+    fn generate_streaming(
+        &self,
+        request: &GenerationRequest,
+    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + Send>, String> {
+        let response = self.generate(request)?;
+        Ok(Box::new(std::iter::once(Ok(response.content))))
+    }
+}
+
+// ===== STREAMING RESPONSE =====
+
+pub struct StreamingChunk {
+    pub delta: String,
+    pub finish_reason: Option<String>,
+    pub usage: Option<TokenUsage>,
 }
 
 // ===== HIGHER-LEVEL TRAITS FOR SUBSYSTEM CONSUMPTION =====
@@ -444,6 +459,270 @@ impl IntelligenceProvider for EchoMockProvider {
     }
 }
 
+// ===== TERA API ADAPTER =====
+
+pub struct TeraProvider {
+    pub base_url: String,
+    pub model: String,
+    pub api_key: Option<String>,
+}
+
+impl TeraProvider {
+    pub fn new(base_url: &str, model: &str, api_key: Option<String>) -> Self {
+        Self {
+            base_url: base_url.trim_end_matches('/').to_string(),
+            model: model.to_string(),
+            api_key,
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct TeraChatRequest {
+    model: String,
+    messages: Vec<TeraMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_tokens: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f64>,
+    stream: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct TeraMessage {
+    role: String,
+    content: String,
+}
+
+#[derive(Deserialize)]
+struct TeraChatResponse {
+    choices: Vec<TeraChoice>,
+    usage: Option<TeraUsage>,
+}
+
+#[derive(Deserialize)]
+struct TeraChoice {
+    message: TeraMessage,
+    finish_reason: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct TeraUsage {
+    prompt_tokens: i64,
+    completion_tokens: i64,
+    total_tokens: i64,
+}
+
+impl IntelligenceProvider for TeraProvider {
+    fn generate(&self, request: &GenerationRequest) -> Result<GenerationResponse, String> {
+        let url = format!("{}/v1/chat/completions", self.base_url);
+        let body = TeraChatRequest {
+            model: self.model.clone(),
+            messages: vec![
+                TeraMessage {
+                    role: "system".to_string(),
+                    content: request.system_prompt.clone(),
+                },
+                TeraMessage {
+                    role: "user".to_string(),
+                    content: request.user_prompt.clone(),
+                },
+            ],
+            max_tokens: request.max_tokens,
+            temperature: request.temperature,
+            stream: false,
+        };
+
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(120))
+            .build()
+            .map_err(|e| format!("HTTP client init failed: {}", e))?;
+
+        let mut req_builder = client.post(&url).json(&body);
+        if let Some(key) = &self.api_key {
+            req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
+        }
+
+        let resp = req_builder
+            .send()
+            .map_err(|e| format!("Tera request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body_text = resp.text().unwrap_or_default();
+            return Err(format!("Tera returned HTTP {}: {}", status, body_text));
+        }
+
+        let chat_resp: TeraChatResponse =
+            resp.json().map_err(|e| format!("Failed to parse Tera response: {}", e))?;
+        let choice = chat_resp
+            .choices
+            .first()
+            .ok_or("Empty response from Tera")?;
+
+        let usage = chat_resp.usage.map(|u| TokenUsage {
+            prompt_tokens: u.prompt_tokens,
+            completion_tokens: u.completion_tokens,
+            total_tokens: u.total_tokens,
+        });
+
+        Ok(GenerationResponse {
+            content: choice.message.content.clone(),
+            finish_reason: choice.finish_reason.clone(),
+            token_usage: usage,
+        })
+    }
+
+    fn health_check(&self) -> Result<ProviderHealthResult, String> {
+        let url = format!("{}/v1/models", self.base_url);
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        let mut req = client.get(&url);
+        if let Some(key) = &self.api_key {
+            req = req.header("Authorization", format!("Bearer {}", key));
+        }
+
+        match req.send() {
+            Ok(resp) if resp.status().is_success() => Ok(ProviderHealthResult {
+                reachable: true,
+                model_available: true,
+                status: ProviderStatus::Connected,
+                message: format!(
+                    "Connected to Tera at {} with model '{}'",
+                    self.base_url, self.model
+                ),
+            }),
+            Ok(resp) => Ok(ProviderHealthResult {
+                reachable: true,
+                model_available: false,
+                status: ProviderStatus::Failed,
+                message: format!("Tera returned HTTP {}", resp.status()),
+            }),
+            Err(e) => Ok(ProviderHealthResult {
+                reachable: false,
+                model_available: false,
+                status: ProviderStatus::Failed,
+                message: format!("Cannot reach Tera at {}: {}", self.base_url, e),
+            }),
+        }
+    }
+
+    fn list_models(&self) -> Result<Vec<ModelDescriptor>, String> {
+        let url = format!("{}/v1/models", self.base_url);
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+            .map_err(|e| e.to_string())?;
+
+        let mut req = client.get(&url);
+        if let Some(key) = &self.api_key {
+            req = req.header("Authorization", format!("Bearer {}", key));
+        }
+
+        let resp = req.send().map_err(|e| format!("Failed: {}", e))?;
+        let models_resp: TeraModelsResponse =
+            resp.json().map_err(|e| format!("Parse error: {}", e))?;
+
+        Ok(models_resp
+            .data
+            .iter()
+            .map(|m| ModelDescriptor {
+                id: m.id.clone(),
+                name: m.id.clone(),
+                context_length: None,
+                supports_tools: false,
+                supports_vision: false,
+            })
+            .collect())
+    }
+
+    fn generate_streaming(
+        &self,
+        request: &GenerationRequest,
+    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + Send>, String> {
+        let url = format!("{}/v1/chat/completions", self.base_url);
+        let body = TeraChatRequest {
+            model: self.model.clone(),
+            messages: vec![
+                TeraMessage {
+                    role: "system".to_string(),
+                    content: request.system_prompt.clone(),
+                },
+                TeraMessage {
+                    role: "user".to_string(),
+                    content: request.user_prompt.clone(),
+                },
+            ],
+            max_tokens: request.max_tokens,
+            temperature: request.temperature,
+            stream: true,
+        };
+
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(120))
+            .build()
+            .map_err(|e| format!("HTTP client init failed: {}", e))?;
+
+        let mut req_builder = client.post(&url).json(&body);
+        if let Some(key) = &self.api_key {
+            req_builder = req_builder.header("Authorization", format!("Bearer {}", key));
+        }
+
+        let resp = req_builder
+            .send()
+            .map_err(|e| format!("Tera streaming request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body_text = resp.text().unwrap_or_default();
+            return Err(format!("Tera returned HTTP {}: {}", status, body_text));
+        }
+
+        let reader = resp;
+        let chunks: Vec<Result<String, String>> = reader
+            .text()
+            .map_err(|e| format!("Failed to read stream: {}", e))?
+            .lines()
+            .filter_map(|line| {
+                let line = line.trim();
+                if line.starts_with("data: ") {
+                    let data = &line[6..];
+                    if data == "[DONE]" {
+                        return None;
+                    }
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(data) {
+                        if let Some(delta) = parsed
+                            .get("choices")
+                            .and_then(|c| c.get(0))
+                            .and_then(|c| c.get("delta"))
+                            .and_then(|d| d.get("content"))
+                            .and_then(|c| c.as_str())
+                        {
+                            return Some(Ok(delta.to_string()));
+                        }
+                    }
+                }
+                None
+            })
+            .collect();
+
+        Ok(Box::new(chunks.into_iter()))
+    }
+}
+
+#[derive(Deserialize)]
+struct TeraModelsResponse {
+    data: Vec<TeraModelEntry>,
+}
+
+#[derive(Deserialize)]
+struct TeraModelEntry {
+    id: String,
+}
+
 // ===== PROVIDER FACTORY =====
 
 pub fn create_provider(
@@ -463,7 +742,23 @@ pub fn create_provider(
             &config.model_id,
             api_key.map(|s| s.to_string()),
         )),
+        ProviderKind::Tera => Box::new(TeraProvider::new(
+            &config.base_url,
+            &config.model_id,
+            api_key.map(|s| s.to_string()),
+        )),
     }
+}
+
+pub fn create_tera_provider(
+    model: &str,
+    api_key: Option<&str>,
+) -> Box<dyn IntelligenceProvider> {
+    Box::new(TeraProvider::new(
+        "https://teraai.chat",
+        model,
+        api_key.map(|s| s.to_string()),
+    ))
 }
 
 // ===== SUBSYSTEM BRIDGE =====
