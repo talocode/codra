@@ -51,6 +51,7 @@ impl<R: CommandRunner> TaskExecutor<R> {
                     std::path::Path::new(&task.workspace_path),
                     change,
                     &backup_dir,
+                    None,
                 )?;
             }
         }

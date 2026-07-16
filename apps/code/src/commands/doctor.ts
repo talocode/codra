@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { getConfig } from '../config.js';
 import { createProvider } from '../providers/index.js';
+import { getAuthBaseUrl, isAuthenticated } from '../auth/index.js';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -68,6 +69,42 @@ export async function doctorCommand() {
   const userMcpConfigPath = path.join(os.homedir(), '.codra/mcp.json');
   console.log(chalk.gray(`    Project config: ${fs.existsSync(mcpConfigPath) ? 'Found' : 'Not found'}`));
   console.log(chalk.gray(`    User config: ${fs.existsSync(userMcpConfigPath) ? 'Found' : 'Not found'}`));
+
+  // Check Tera API connectivity
+  console.log(chalk.cyan('\n  Tera API:'));
+  const teraBaseUrl = getAuthBaseUrl();
+  console.log(chalk.gray(`    Base URL: ${teraBaseUrl}`));
+  console.log(chalk.gray(`    Authenticated: ${isAuthenticated() ? 'Yes' : 'No'}`));
+
+  try {
+    const testUrl = `${teraBaseUrl}/api/codra/auth/device/start`;
+    const testResponse = await fetch(testUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cli_version: '0.1.6', platform: process.platform }),
+      signal: AbortSignal.timeout(10000)
+    });
+
+    const contentType = testResponse.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+
+    if (isJson && testResponse.ok) {
+      console.log(chalk.green('    Login endpoint: Reachable (JSON)'));
+    } else if (isJson && !testResponse.ok) {
+      console.log(chalk.yellow(`    Login endpoint: Returns JSON but status ${testResponse.status}`));
+    } else {
+      console.log(chalk.red('    Login endpoint: Returns HTML instead of JSON'));
+      console.log(chalk.red('    This usually means the API route is not deployed or is misconfigured.'));
+      console.log(chalk.gray('    Try: codra-code login --no-browser'));
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('timeout') || msg.includes('Timeout')) {
+      console.log(chalk.yellow('    Login endpoint: Timed out (10s)'));
+    } else {
+      console.log(chalk.red(`    Login endpoint: Unreachable (${msg})`));
+    }
+  }
 
   // Check plugins
   console.log(chalk.cyan('\n  Plugins:'));

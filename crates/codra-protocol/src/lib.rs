@@ -666,6 +666,7 @@ pub enum ProviderKind {
     Gemini,
     Bedrock,
     Vertex,
+    Tera,
     Mock,
 }
 
